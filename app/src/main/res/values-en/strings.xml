@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Mint Music</string>
+
+    <string name="select_music_folder">Select local folder</string>
+    <string name="manage_cloud_sources">Manage online sources</string>
+    <string name="resume_last_playback">Resume last playback</string>
+
+    <string name="filter_all">All</string>
+    <string name="filter_local">Local</string>
+    <string name="filter_cloud">Cloud</string>
+
+    <string name="library_count">%1$d tracks</string>
+    <string name="library_loading">Loading library...</string>
+    <string name="library_empty_tip">No music yet. Select a local folder or add online sources first.</string>
+    <string name="no_folder_selected">No local folder selected</string>
+    <string name="selected_folder_short">Folder: %1$s</string>
+
+    <string name="source_local">Local</string>
+    <string name="source_cloud">Cloud</string>
+
+    <string name="stream_name_hint">Source name</string>
+    <string name="stream_url_hint">Source URL</string>
+    <string name="add_cloud_source">Add online source</string>
+    <string name="empty_stream_list">No online sources</string>
+    <string name="no_stream_url">Please enter source URL</string>
+    <string name="invalid_stream_url">Invalid URL format</string>
+    <string name="duplicate_stream_url">This URL already exists</string>
+    <string name="edit_stream_name">Edit source name</string>
+    <string name="stream_name_empty">Please enter a name</string>
+
+    <string name="player">Player</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="play_pause">Play/Pause</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+
+    <string name="playback_mode">Playback mode</string>
+    <string name="playback_mode_with_value">Mode: %1$s</string>
+    <string name="mode_order">In order</string>
+    <string name="mode_repeat_one">Repeat one</string>
+    <string name="mode_repeat_all">Repeat all</string>
+    <string name="mode_shuffle">Shuffle</string>
+
+    <string name="ready_to_play">Ready to play</string>
+    <string name="status_loading">Loading...</string>
+    <string name="status_buffering">Buffering...</string>
+    <string name="status_playing">Playing</string>
+    <string name="status_paused">Paused</string>
+    <string name="status_error">Playback error</string>
+    <string name="status_retrying">Network unstable, retrying (%1$d/%2$d)</string>
+
+    <string name="buffered_percent">Buffered</string>
+    <string name="buffered_percent_with_value">Buffered: %1$d%%</string>
+
+    <string name="no_resume_item">Nothing to play</string>
+    <string name="resume_item_missing">Last played item is not available</string>
+
+    <string name="playback_channel_name">Audio playback</string>
+    <string name="playback_channel_desc">Playback controls and background status</string>
+</resources>

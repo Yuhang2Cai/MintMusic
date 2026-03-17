@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.TimedMusicPlayer" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/app_green_primary</item>
+        <item name="colorPrimaryVariant">@color/app_green_primary_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/app_green_accent</item>
+        <item name="colorSecondaryVariant">@color/app_green_primary</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:statusBarColor">@color/app_green_primary_dark</item>
+        <item name="android:windowBackground">@color/app_background</item>
+        <item name="android:forceDarkAllowed">false</item>
+    </style>
+
+    <style name="MintWaveCircularCover">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+</resources>
+

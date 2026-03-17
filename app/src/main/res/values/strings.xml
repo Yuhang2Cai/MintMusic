@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">薄荷音乐</string>
+
+    <string name="select_music_folder">选择本地文件夹</string>
+    <string name="manage_cloud_sources">管理在线音源</string>
+    <string name="resume_last_playback">继续上次播放</string>
+
+    <string name="filter_all">全部</string>
+    <string name="filter_local">本地</string>
+    <string name="filter_cloud">云端</string>
+
+    <string name="library_count">共 %1$d 首</string>
+    <string name="library_loading">正在加载音乐库...</string>
+    <string name="library_empty_tip">暂无音乐，请先选择本地文件夹或添加在线音源</string>
+    <string name="no_folder_selected">未选择本地文件夹</string>
+    <string name="selected_folder_short">文件夹：%1$s</string>
+
+    <string name="source_local">本地</string>
+    <string name="source_cloud">云端</string>
+
+    <string name="stream_name_hint">音源名称</string>
+    <string name="stream_url_hint">音源 URL</string>
+    <string name="add_cloud_source">添加在线音源</string>
+    <string name="empty_stream_list">暂无在线音源</string>
+    <string name="no_stream_url">请输入音源 URL</string>
+    <string name="invalid_stream_url">URL 格式不正确</string>
+    <string name="duplicate_stream_url">该 URL 已存在</string>
+    <string name="edit_stream_name">编辑音源名称</string>
+    <string name="stream_name_empty">请输入名称</string>
+
+    <string name="player">播放器</string>
+    <string name="previous">上一首</string>
+    <string name="next">下一首</string>
+    <string name="play">播放</string>
+    <string name="pause">暂停</string>
+    <string name="play_pause">播放/暂停</string>
+    <string name="delete">删除</string>
+    <string name="edit">编辑</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+
+    <string name="playback_mode">播放模式</string>
+    <string name="playback_mode_with_value">模式：%1$s</string>
+    <string name="mode_order">顺序播放</string>
+    <string name="mode_repeat_one">单曲循环</string>
+    <string name="mode_repeat_all">列表循环</string>
+    <string name="mode_shuffle">随机播放</string>
+
+    <string name="ready_to_play">准备播放</string>
+    <string name="status_loading">加载中...</string>
+    <string name="status_buffering">缓冲中...</string>
+    <string name="status_playing">播放中</string>
+    <string name="status_paused">已暂停</string>
+    <string name="status_error">播放出错</string>
+    <string name="status_retrying">网络不稳定，重试中（%1$d/%2$d）</string>
+
+    <string name="buffered_percent">缓冲</string>
+    <string name="buffered_percent_with_value">已缓冲：%1$d%%</string>
+
+    <string name="no_resume_item">没有可播放内容</string>
+    <string name="resume_item_missing">上次播放的内容已不存在</string>
+
+    <string name="playback_channel_name">音频播放</string>
+    <string name="playback_channel_desc">播放控制与后台状态</string>
+</resources>
