@@ -145,7 +145,8 @@ class PlayerViewModel(
             canSkip = snapshot.queue.size > 1,
             seekMax = safeMax,
             seekProgress = safeProgress,
-            bufferedProgress = safeBuffered
+            bufferedProgress = safeBuffered,
+            currentTrack = current
         )
     }
 }

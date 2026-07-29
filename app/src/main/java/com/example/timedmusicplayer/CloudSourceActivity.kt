@@ -52,7 +52,8 @@ class CloudSourceActivity : AppCompatActivity() {
         binding.btnAddSource.setOnClickListener {
             viewModel.onAddSource(
                 inputName = binding.etSourceName.text?.toString().orEmpty(),
-                url = binding.etSourceUrl.text?.toString().orEmpty()
+                url = binding.etSourceUrl.text?.toString().orEmpty(),
+                coverUrl = binding.etCoverUrl.text?.toString().orEmpty()
             )
         }
 

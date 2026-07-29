@@ -1,0 +1,12 @@
+services:
+  origin:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./media:/usr/share/nginx/html:ro
+    expose: ["80"]
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.12.0
+    depends_on: [origin]
+    ports:
+      - "8474:8474"
+      - "8666:8666"

@@ -1,4 +1,6 @@
-﻿package com.example.timedmusicplayer.ui.player
+package com.example.timedmusicplayer.ui.player
+
+import com.example.timedmusicplayer.model.Track
 
 data class PlayerUiState(
     val title: String = "",
@@ -14,5 +16,6 @@ data class PlayerUiState(
     val canSkip: Boolean = false,
     val seekMax: Int = 0,
     val seekProgress: Int = 0,
-    val bufferedProgress: Int = 0
+    val bufferedProgress: Int = 0,
+    val currentTrack: Track? = null
 )

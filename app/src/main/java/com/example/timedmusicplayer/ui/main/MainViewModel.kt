@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import com.example.timedmusicplayer.R
 import com.example.timedmusicplayer.data.MusicRepository
 import com.example.timedmusicplayer.model.Track
@@ -12,12 +13,14 @@ import com.example.timedmusicplayer.playback.PlaybackController
 import com.example.timedmusicplayer.playback.PlaybackSnapshot
 import com.example.timedmusicplayer.ui.common.PlaybackUiFormatter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,11 +38,19 @@ class MainViewModel(
     private val eventChannel = Channel<MainEvent>(Channel.BUFFERED)
 
     private var loadJob: Job? = null
+    private val filterValue = MutableStateFlow(TrackFilter.ALL)
 
     val uiState: StateFlow<MainUiState> = uiStateValue.asStateFlow()
     val events = eventChannel.receiveAsFlow()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pagingData = filterValue.flatMapLatest(repository::pagingTracks).cachedIn(viewModelScope)
 
     init {
+        val restoredFilter = runCatching {
+            TrackFilter.valueOf(repository.getSelectedFilter(TrackFilter.ALL.name))
+        }.getOrDefault(TrackFilter.ALL)
+        filterValue.value = restoredFilter
+        uiStateValue.value = uiStateValue.value.copy(activeFilter = restoredFilter)
         viewModelScope.launch {
             playbackController.snapshot.collect { snapshot ->
                 uiStateValue.value = uiStateValue.value.copy(
@@ -67,6 +78,8 @@ class MainViewModel(
             return
         }
         uiStateValue.value = uiStateValue.value.copy(activeFilter = filter)
+        filterValue.value = filter
+        repository.saveSelectedFilter(filter.name)
         loadLibrary(forceRefresh = false)
     }
 
@@ -117,13 +130,12 @@ class MainViewModel(
     }
 
     fun onTrackSelected(track: Track) {
-        val tracks = uiStateValue.value.tracks
-        val index = tracks.indexOfFirst { it.id == track.id }
-        if (index == -1) {
-            return
-        }
-
         viewModelScope.launch {
+            val tracks = withContext(Dispatchers.IO) {
+                repository.getTracks(uiStateValue.value.activeFilter, forceRefresh = false)
+            }
+            val index = tracks.indexOfFirst { it.id == track.id }
+            if (index == -1) return@launch
             eventChannel.send(MainEvent.OpenPlayer(ArrayList(tracks), index))
         }
     }
@@ -153,7 +165,7 @@ class MainViewModel(
     private fun loadLibrary(forceRefresh: Boolean) {
         loadJob?.cancel()
         val currentState = uiStateValue.value
-        if (currentState.tracks.isEmpty() || forceRefresh) {
+        if (forceRefresh) {
             uiStateValue.value = currentState.copy(
                 libraryCountText = app.getString(R.string.library_loading)
             )
@@ -161,13 +173,13 @@ class MainViewModel(
 
         loadJob = viewModelScope.launch {
             val filter = uiStateValue.value.activeFilter
-            val tracks = withContext(Dispatchers.IO) {
-                repository.getTracks(filter, forceRefresh)
+            val count = withContext(Dispatchers.IO) {
+                repository.refreshLibrary(forceRefresh)
+                repository.trackCount(filter)
             }
             uiStateValue.value = uiStateValue.value.copy(
-                tracks = tracks,
-                libraryCountText = app.getString(R.string.library_count, tracks.size),
-                showEmpty = tracks.isEmpty()
+                libraryCountText = app.getString(R.string.library_count, count),
+                showEmpty = count == 0
             )
         }
     }

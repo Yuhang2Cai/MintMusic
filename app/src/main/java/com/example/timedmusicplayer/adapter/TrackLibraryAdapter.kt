@@ -4,25 +4,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.ImageView
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
+import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.timedmusicplayer.R
+import com.example.timedmusicplayer.artwork.ArtworkRepository
 import com.example.timedmusicplayer.model.SourceType
 import com.example.timedmusicplayer.model.Track
 import java.util.Locale
 
 class TrackLibraryAdapter(
     private val onItemClick: (Track) -> Unit
-) : ListAdapter<Track, TrackLibraryAdapter.TrackViewHolder>(TrackDiffCallback()) {
+) : PagingDataAdapter<Track, TrackLibraryAdapter.TrackViewHolder>(TrackDiffCallback()) {
 
-    init {
-        setHasStableIds(true)
-    }
-
-    override fun getItemId(position: Int): Long {
-        return getItem(position).id.hashCode().toLong()
-    }
+    private var artworkRepository: ArtworkRepository? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -31,8 +27,10 @@ class TrackLibraryAdapter(
     }
 
     override fun onBindViewHolder(holder: TrackViewHolder, position: Int) {
-        val track = getItem(position)
+        val track = getItem(position) ?: return
         holder.title.text = track.title
+        val artwork = artworkRepository ?: ArtworkRepository(holder.itemView.context.applicationContext).also { artworkRepository = it }
+        artwork.load(holder.cover, track, 128)
         holder.subtitle.text = buildSubtitle(track)
         holder.sourceTag.text = if (track.sourceType == SourceType.LOCAL) {
             holder.itemView.context.getString(R.string.source_local)
@@ -42,10 +40,6 @@ class TrackLibraryAdapter(
         holder.itemView.setOnClickListener {
             onItemClick(track)
         }
-    }
-
-    fun submitTracks(items: List<Track>) {
-        submitList(items.toList())
     }
 
     private fun buildSubtitle(track: Track): String {
@@ -65,6 +59,7 @@ class TrackLibraryAdapter(
 
     class TrackViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val title: TextView = itemView.findViewById(R.id.tvTitle)
+        val cover: ImageView = itemView.findViewById(R.id.ivCover)
         val subtitle: TextView = itemView.findViewById(R.id.tvSubtitle)
         val sourceTag: TextView = itemView.findViewById(R.id.tvSourceTag)
     }

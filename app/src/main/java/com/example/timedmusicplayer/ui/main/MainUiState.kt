@@ -1,10 +1,8 @@
 ﻿package com.example.timedmusicplayer.ui.main
 
-import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.model.TrackFilter
 
 data class MainUiState(
-    val tracks: List<Track> = emptyList(),
     val activeFilter: TrackFilter = TrackFilter.ALL,
     val libraryCountText: String = "",
     val showEmpty: Boolean = false,

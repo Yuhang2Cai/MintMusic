@@ -1,64 +1,25 @@
 # MintMusic（薄荷音乐）
 
-MintMusic 是一款面向本地曲库与在线音源的 Android 音乐播放器，支持统一曲库浏览、后台播放、播放队列和断点续播。
+MintMusic 是面向本地曲库和在线音源的 Android 音乐播放器。项目使用 XML/ViewBinding，支持后台播放、系统媒体控制、断点续播、增量曲库扫描和弱网恢复。
 
-## 当前功能
+## 功能与架构
 
-- 通过系统文件访问框架（SAF）选择并扫描本地音乐目录。
-- 添加、编辑和删除在线音源，并与本地歌曲统一展示。
-- 支持顺序播放、单曲循环、列表循环和随机播放。
-- 保存播放队列、当前曲目和播放进度，支持继续上次播放。
-- 使用前台服务保持后台播放，并提供通知栏媒体控制。
-- 通过 MediaSession 支持系统媒体控制，在线播放期间使用 Wi-Fi Lock 保持连接。
-- 提供音乐库筛选、独立播放器页面和迷你播放器。
+- Media3 `MediaSessionService + MediaController`：播放进程、通知栏和系统媒体控制使用同一状态源。
+- Room：保存本地曲目索引、在线音源、播放队列及播放历史；首次升级会自动导入旧 SharedPreferences/JSON 数据。
+- DataStore：保存目录、播放模式等轻量设置；旧数据保留一个版本用于回退。
+- 增量 SAF 扫描：用 URI、文件大小和修改时间识别变化，每 100 条批量写入，仅在完整扫描成功后删除失效记录。
+- 封面管线：本地音乐按需读取内嵌封面，在线音源可配置封面 URL；使用 Coil 的内存/磁盘缓存，不在扫描阶段解码图片。
+- 弱网恢复：区分可重试网络错误与永久错误，离线时等待网络，在线后采用 1/2/4/8 秒指数退避并加入抖动，最多重试 4 次。
+- 播放进度：500ms 仅更新可见 UI 的内存状态；Room 每 5 秒且位移至少 5 秒保存一次，并在暂停、切歌、拖动和错误时立即保存。
 
-## 技术栈
+## 环境
 
-- Kotlin
-- AndroidX / Material Components
-- Media3 ExoPlayer
-- ViewModel、StateFlow 与 Kotlin Coroutines
-- RecyclerView、ListAdapter 与 ViewBinding
-- Storage Access Framework / DocumentFile
-
-## 环境要求
-
-- Android Studio
-- Android SDK 34
-- JDK 8 兼容工具链
-- Android 8.0（API 26）及以上设备
-
-## 构建与运行
-
-1. 使用 Android Studio 打开项目。
-2. 等待 Gradle 同步完成。
-3. 连接 Android 设备或启动模拟器。
-4. 运行 `app` 配置。
-
-首次使用本地曲库时，需要通过系统目录选择器授予音乐目录访问权限。在线音源播放需要网络连接。
-
-## 项目结构
-
-```text
-app/src/main/java/.../
-├── analytics/   # 事件日志与异常记录
-├── data/        # 本地曲库、在线音源及播放记录
-├── model/       # 领域模型
-├── playback/    # 播放服务、队列与播放状态
-├── ui/          # 页面状态与 ViewModel
-└── adapter/     # 曲库及在线音源列表
-```
-
-## 验证
+- Android Studio / JDK 17
+- Android SDK 36（`targetSdk 34`、`minSdk 26`）
+- AGP 8.10.1 / Gradle 8.11.1 / Kotlin 2.1.20
 
 ```powershell
-.\gradlew.bat test
-.\gradlew.bat assembleDebug
+.\gradlew.bat testDebugUnitTest assembleDebug
 ```
 
-## 后续方向
-
-- 提升弱网流媒体播放和错误恢复能力。
-- 迁移到完整的 Media3 MediaSessionService 架构。
-- 建设基于 Room、Paging 3 和增量扫描的大型本地曲库。
-- 使用 Macrobenchmark 与 Perfetto 建立可复现的性能基线。
+性能基准模块为 `macrobenchmark`，测试协议见 `docs/performance/BASELINE.md`。弱网实验使用 Toxiproxy，操作说明见 `tools/toxiproxy/README.md`。

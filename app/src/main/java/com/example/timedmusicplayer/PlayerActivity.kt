@@ -13,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.timedmusicplayer.databinding.ActivityPlayerBinding
+import com.example.timedmusicplayer.artwork.ArtworkRepository
 import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.ui.AppViewModelFactory
 import com.example.timedmusicplayer.ui.player.PlayerUiState
@@ -24,6 +25,8 @@ class PlayerActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPlayerBinding
     private var coverRotationAnimator: ObjectAnimator? = null
+    private val artwork by lazy { ArtworkRepository(applicationContext) }
+    private var displayedCoverId: String? = null
 
     private val viewModel: PlayerViewModel by viewModels {
         AppViewModelFactory(application)
@@ -147,6 +150,11 @@ class PlayerActivity : AppCompatActivity() {
         binding.btnPrevious.isEnabled = state.canSkip
         binding.btnNext.isEnabled = state.canSkip
 
+        if (state.currentTrack?.id != displayedCoverId) {
+            displayedCoverId = state.currentTrack?.id
+            artwork.load(binding.ivCover, state.currentTrack, 512)
+        }
+
         if (state.isPlaying) {
             startCoverRotation()
         } else {
@@ -182,18 +190,12 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun applyCoverArt() {
-        val customCoverResId = resources.getIdentifier(CUSTOM_COVER_RES_NAME, "drawable", packageName)
-        if (customCoverResId != 0) {
-            binding.ivCover.setImageResource(customCoverResId)
-        } else {
-            binding.ivCover.setImageResource(R.drawable.cover_placeholder)
-        }
+        binding.ivCover.setImageResource(R.drawable.cover_placeholder)
     }
 
     companion object {
         const val EXTRA_QUEUE = "extra_queue"
         const val EXTRA_START_INDEX = "extra_start_index"
 
-        private const val CUSTOM_COVER_RES_NAME = "jay_cover"
     }
 }

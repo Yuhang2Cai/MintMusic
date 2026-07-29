@@ -13,5 +13,6 @@ data class CloudSource(
     // 音源展示名称，优先使用用户输入，便于在列表中识别。
     val name: String,
     // 实际可播放的流媒体地址（http/https）。
-    val url: String
+    val url: String,
+    val coverUrl: String? = null
 )

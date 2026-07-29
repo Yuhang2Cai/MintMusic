@@ -23,7 +23,13 @@ data class Track(
     // 曲目来源类型，驱动播放和展示差异化逻辑。
     val sourceType: SourceType,
     // 实际可播放地址：本地 content:// 或在线 http(s)://。
-    val uri: String
+    val uri: String,
+    val album: String = "",
+    val coverUrl: String? = null,
+    val folderUri: String? = null,
+    val sizeBytes: Long = 0L,
+    val modifiedAtMs: Long = 0L,
+    val mimeType: String? = null
 ) : Parcelable {
     // 是否为流媒体曲目：true 表示来自云端音源。
     val isStream: Boolean

@@ -42,17 +42,19 @@ class CloudSourceViewModel(
         loadSources()
     }
 
-    fun onAddSource(inputName: String, url: String) {
+    fun onAddSource(inputName: String, url: String, coverUrl: String = "") {
         val safeUrl = url.trim()
         val safeInputName = inputName.trim()
+        val safeCoverUrl = coverUrl.trim()
 
         when {
             safeUrl.isBlank() -> sendMessage(app.getString(R.string.no_stream_url))
             !isValidUrl(safeUrl) -> sendMessage(app.getString(R.string.invalid_stream_url))
+            safeCoverUrl.isNotBlank() && !isValidUrl(safeCoverUrl) -> sendMessage(app.getString(R.string.invalid_stream_url))
             repository.hasDuplicateCloudUrl(safeUrl) -> sendMessage(app.getString(R.string.duplicate_stream_url))
             else -> {
                 val finalName = if (safeInputName.isBlank()) deriveName(safeUrl) else safeInputName
-                repository.addCloudSource(finalName, safeUrl)
+                repository.addCloudSource(finalName, safeUrl, safeCoverUrl)
                 loadSources()
                 viewModelScope.launch {
                     eventChannel.send(CloudSourceEvent.ClearNameInput)

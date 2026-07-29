@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="cloud_cover_url_hint">封面 URL（可选）</string>
     <string name="app_name">薄荷音乐</string>
 
     <string name="select_music_folder">选择本地文件夹</string>

@@ -126,12 +126,14 @@ class MainActivity : AppCompatActivity() {
                         handleEvent(event)
                     }
                 }
+                launch {
+                    viewModel.pagingData.collect { adapter.submitData(it) }
+                }
             }
         }
     }
 
     private fun render(state: MainUiState) {
-        adapter.submitTracks(state.tracks)
         binding.tvLibraryCount.text = state.libraryCountText
         binding.tvEmpty.visibility = if (state.showEmpty) View.VISIBLE else View.GONE
         renderFilter(state.activeFilter)
