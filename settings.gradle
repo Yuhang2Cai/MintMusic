@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "TimedMusicPlayer"
-include ':app' 
+rootProject.name = "MintMusic"
+include ':app'
