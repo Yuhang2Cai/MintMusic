@@ -44,6 +44,7 @@
     <string name="edit">编辑</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
+    <string name="confirm">确定</string>
     <string name="selected_tracks_count">已选择 %1$d 首</string>
     <string name="delete_tracks_title">删除歌曲</string>
     <string name="delete_tracks_message">确定删除选中的 %1$d 首歌曲吗？本地歌曲文件也会被删除，此操作无法撤销。</string>
@@ -113,6 +114,10 @@
     <string name="music_mood_start">开始分析</string>
     <string name="music_mood_started">正在分析歌曲情绪…</string>
     <string name="music_mood_result">识别到的情绪\n%1$s\n\n愉悦度：%2$s\n能量：%3$s</string>
+    <string name="mood_result_heading">这首歌的情绪</string>
+    <string name="mood_result_tags">识别到的情绪</string>
+    <string name="mood_valence">愉悦度</string>
+    <string name="mood_energy">能量</string>
     <string name="music_mood_no_label">未识别出明确情绪标签</string>
     <string name="music_mood_failed">歌曲情绪分析失败：%1$s</string>
     <string name="music_mood_local_only">当前仅支持分析本地歌曲</string>

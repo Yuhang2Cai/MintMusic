@@ -40,6 +40,7 @@ import com.example.timedmusicplayer.ui.player.PlayerUiState
 import com.example.timedmusicplayer.ui.player.PlayerViewModel
 import com.example.timedmusicplayer.ui.theme.ThemeColorStore
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.chip.Chip
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -353,6 +354,9 @@ class PlayerActivity : AppCompatActivity() {
             .addTag("lyrics:$trackId")
             .build()
         val manager = WorkManager.getInstance(this)
+        // The screen can be opened before the playback-state collector emits its
+        // first value. Anchor the loading state to the requested detail track now.
+        lyricTrackId = trackId
         lyricsFetchingTrackId = trackId
         lyricsFetchingWorkId = request.id
         renderMoodAnalysis(latestMoodStates)
@@ -429,15 +433,19 @@ class PlayerActivity : AppCompatActivity() {
 
     private fun showMoodResult(moods: String, valence: Double, arousal: Double) {
         fun score(value: Double) = if (value.isNaN()) "—" else String.format(java.util.Locale.getDefault(), "%.2f", value)
+        val content = layoutInflater.inflate(R.layout.dialog_mood_result, null)
+        content.findViewById<android.widget.TextView>(R.id.tvMoodDialogTrack).text = latestState.title
+        content.findViewById<android.widget.TextView>(R.id.tvMoodValence).text = score(valence)
+        content.findViewById<android.widget.TextView>(R.id.tvMoodArousal).text = score(arousal)
+        val labels = moods.split(',', '·', '|').map(String::trim).filter(String::isNotBlank).take(4)
+        val translated = mapOf("sad" to "忧郁", "melancholic" to "忧郁", "romantic" to "浪漫", "love" to "浪漫", "powerful" to "激昂", "motivational" to "励志", "hopeful" to "希望", "ballad" to "抒情", "epic" to "史诗感", "dramatic" to "戏剧感", "drama" to "戏剧感", "adventure" to "冒险", "dark" to "暗黑", "emotional" to "感性")
+        val chips = content.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipMoodResult)
+        (labels.map { translated[it.lowercase()] ?: it }.ifEmpty { listOf(getString(R.string.music_mood_no_label)) }).forEach { label ->
+            chips.addView(Chip(this).apply { text = label; isClickable = false; isCheckable = false; setChipBackgroundColorResource(R.color.app_surface); setTextColor(ContextCompat.getColor(this@PlayerActivity, R.color.app_text_primary)) })
+        }
         MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.music_mood_title)
-            .setMessage(getString(
-                R.string.music_mood_result,
-                moods.ifBlank { getString(R.string.music_mood_no_label) },
-                score(valence),
-                score(arousal)
-            ))
-            .setPositiveButton(android.R.string.ok, null)
+            .setView(content)
+            .setPositiveButton(R.string.confirm, null)
             .show()
     }
 

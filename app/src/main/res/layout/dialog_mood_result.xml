@@ -1,0 +1,58 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:id="@+id/tvMoodDialogTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/mood_result_heading"
+        android:textColor="@color/app_text_primary"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvMoodDialogTrack"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="@color/app_text_secondary"
+        android:textSize="14sp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/mood_result_tags"
+        android:textColor="@color/app_text_secondary"
+        android:textSize="13sp" />
+
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chipMoodResult"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:chipSpacingHorizontal="8dp"
+        app:chipSpacingVertical="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/bg_mood_tag" android:gravity="center" android:orientation="vertical" android:padding="12dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center" android:text="@string/mood_valence" android:textColor="@color/app_text_secondary" android:textSize="12sp" />
+            <TextView android:id="@+id/tvMoodValence" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:gravity="center" android:textColor="@color/app_text_primary" android:textSize="20sp" android:textStyle="bold" />
+        </LinearLayout>
+        <Space android:layout_width="10dp" android:layout_height="1dp" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:background="@drawable/bg_mood_tag" android:gravity="center" android:orientation="vertical" android:padding="12dp">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:gravity="center" android:text="@string/mood_energy" android:textColor="@color/app_text_secondary" android:textSize="12sp" />
+            <TextView android:id="@+id/tvMoodArousal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:gravity="center" android:textColor="@color/app_text_primary" android:textSize="20sp" android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
