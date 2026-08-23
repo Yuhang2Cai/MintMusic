@@ -57,7 +57,9 @@ class MusicRepository private constructor(context: Context) {
     fun getTracks(filter: TrackFilter, forceRefresh: Boolean = false): List<Track> = blockingIo {
         ensureMigratedInternal()
         val folder = settings.folderUri()?.takeIf(String::isNotBlank)
-        if (folder != null && (forceRefresh || database.tracks().getBySource(SourceType.LOCAL.name).isEmpty())) scanner.scan(Uri.parse(folder), forceMetadata = forceRefresh)
+        if (folder != null && shouldScan(folder, forceRefresh)) {
+            scanner.scan(Uri.parse(folder), forceMetadata = forceRefresh)
+        }
         val rows = when (filter) {
             TrackFilter.ALL -> database.tracks().getAll()
             TrackFilter.LOCAL -> database.tracks().getBySource(SourceType.LOCAL.name)
@@ -80,8 +82,13 @@ class MusicRepository private constructor(context: Context) {
     fun refreshLibrary(forceRefresh: Boolean) = blockingIo {
         ensureMigratedInternal()
         val folder = settings.folderUri()?.takeIf(String::isNotBlank) ?: return@blockingIo
-        if (forceRefresh || database.tracks().countBySource(SourceType.LOCAL.name) == 0) scanner.scan(Uri.parse(folder), forceRefresh)
+        if (shouldScan(folder, forceRefresh)) {
+            scanner.scan(Uri.parse(folder), forceMetadata = forceRefresh)
+        }
     }
+
+    private fun shouldScan(folder: String, forceRefresh: Boolean): Boolean =
+        forceRefresh || database.folders().get(folder) == null
 
     fun trackCount(filter: TrackFilter): Int = blockingIo {
         ensureMigratedInternal()
@@ -113,32 +120,14 @@ class MusicRepository private constructor(context: Context) {
     fun deleteTracks(tracks: List<Track>): DeleteTracksResult = blockingIo {
         ensureMigratedInternal()
         val distinctTracks = tracks.distinctBy(Track::id)
-        val deletedLocalIds = distinctTracks.asSequence()
-            .filter { it.sourceType == SourceType.LOCAL }
-            .filter { track ->
-                runCatching {
-                    val file = DocumentFile.fromSingleUri(appContext, Uri.parse(track.uri))
-                    file != null && file.delete()
-                }.getOrDefault(false)
-            }
-            .map(Track::id)
-            .toList()
-
-        deletedLocalIds.chunked(500).forEach(database.tracks()::deleteByIds)
-
-        val cloudSourceIds = distinctTracks.asSequence()
-            .filter { it.sourceType == SourceType.CLOUD }
-            .mapNotNull { it.id.removePrefix("cloud:").takeIf(String::isNotBlank) }
-            .distinct()
-            .toList()
-        val deletedCloudCount = cloudSourceIds.count { database.cloudSources().deleteById(it) > 0 }
-        if (deletedCloudCount > 0) syncCloudTracks()
-
-        val deleted = deletedLocalIds.size + deletedCloudCount
+        // This action only removes entries from the homepage library. Never delete
+        // the user's local media file or the configured cloud-source record.
+        val ids = distinctTracks.map(Track::id)
+        ids.chunked(500).forEach(database.tracks()::deleteByIds)
         DeleteTracksResult(
             requested = distinctTracks.size,
-            deleted = deleted,
-            failed = (distinctTracks.size - deleted).coerceAtLeast(0)
+            deleted = ids.size,
+            failed = 0
         )
     }
 

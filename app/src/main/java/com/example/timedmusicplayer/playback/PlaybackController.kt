@@ -31,15 +31,22 @@ class PlaybackController private constructor(context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
-    private var clients = 0
+    private var detailClients = 0
+    private var miniPlayerClients = 0
     private var pendingQueue: QueueRequest? = null
     private var ticker: Job? = null
+    private var tickerIntervalMs = 0L
+    private var queueSnapshot: List<Track> = emptyList()
 
     val snapshot: StateFlow<PlaybackSnapshot?> = snapshotState.asStateFlow()
 
-    @Synchronized fun connect() {
-        clients++
+    @Synchronized fun connect(tickMode: PlaybackTickMode) {
+        when (tickMode) {
+            PlaybackTickMode.DETAIL -> detailClients++
+            PlaybackTickMode.MINI_PLAYER -> miniPlayerClients++
+        }
         ensureController()
+        updateTicker()
     }
 
     private fun ensureController() {
@@ -59,20 +66,28 @@ class PlaybackController private constructor(context: Context) {
                         playQueue(request.tracks, request.startIndex, request.forcePlay, request.startPositionMs)
                     }
                     pendingQueue = null
-                    emitSnapshot()
+                    emitSnapshot(refreshQueue = true)
                     updateTicker()
                 }
             }, ContextCompat.getMainExecutor(appContext))
         }
     }
 
-    @Synchronized fun disconnect() {
-        clients = (clients - 1).coerceAtLeast(0)
-        if (clients > 0) return
+    @Synchronized fun disconnect(tickMode: PlaybackTickMode) {
+        when (tickMode) {
+            PlaybackTickMode.DETAIL -> detailClients = (detailClients - 1).coerceAtLeast(0)
+            PlaybackTickMode.MINI_PLAYER -> miniPlayerClients = (miniPlayerClients - 1).coerceAtLeast(0)
+        }
+        if (detailClients + miniPlayerClients > 0) {
+            updateTicker()
+            return
+        }
         ticker?.cancel(); ticker = null
+        tickerIntervalMs = 0L
         controller?.removeListener(listener)
         controller?.release(); controller = null
         controllerFuture?.cancel(false); controllerFuture = null
+        queueSnapshot = emptyList()
     }
 
     fun playQueue(
@@ -95,6 +110,7 @@ class PlaybackController private constructor(context: Context) {
         )
         active.prepare()
         if (forcePlay) active.play()
+        queueSnapshot = tracks.toList()
         emitSnapshot()
     }
 
@@ -131,7 +147,10 @@ class PlaybackController private constructor(context: Context) {
     }
 
     private val listener = object : Player.Listener {
-        override fun onEvents(player: Player, events: Player.Events) { emitSnapshot(); updateTicker() }
+        override fun onEvents(player: Player, events: Player.Events) {
+            emitSnapshot(refreshQueue = events.contains(Player.EVENT_TIMELINE_CHANGED))
+            updateTicker()
+        }
     }
 
     private val controllerListener = object : MediaController.Listener {
@@ -144,14 +163,30 @@ class PlaybackController private constructor(context: Context) {
     private fun updateTicker() {
         val active = controller
         val needsTicks = active?.isPlaying == true || sleepTimerRemainingMs(active) > 0L
-        if (clients <= 0 || !needsTicks) { ticker?.cancel(); ticker = null; return }
-        if (ticker?.isActive == true) return
-        ticker = scope.launch { while (isActive) { emitSnapshot(); delay(500L) } }
+        if (detailClients + miniPlayerClients <= 0 || !needsTicks) {
+            ticker?.cancel()
+            ticker = null
+            tickerIntervalMs = 0L
+            return
+        }
+        val desiredIntervalMs = if (detailClients > 0) DETAIL_TICK_INTERVAL_MS else MINI_PLAYER_TICK_INTERVAL_MS
+        if (ticker?.isActive == true && tickerIntervalMs == desiredIntervalMs) return
+        ticker?.cancel()
+        tickerIntervalMs = desiredIntervalMs
+        ticker = scope.launch {
+            while (isActive) {
+                emitSnapshot()
+                delay(desiredIntervalMs)
+            }
+        }
     }
 
-    private fun emitSnapshot() {
+    private fun emitSnapshot(refreshQueue: Boolean = false) {
         val active = controller ?: return
-        val queue = (0 until active.mediaItemCount).map { active.getMediaItemAt(it).toTrack() }
+        if (refreshQueue || queueSnapshot.size != active.mediaItemCount) {
+            queueSnapshot = (0 until active.mediaItemCount).map { active.getMediaItemAt(it).toTrack() }
+        }
+        val queue = queueSnapshot
         val state = when {
             active.playerError != null -> PlaybackUiState.ERROR
             active.playbackState == Player.STATE_BUFFERING -> PlaybackUiState.BUFFERING
@@ -233,7 +268,14 @@ class PlaybackController private constructor(context: Context) {
         val startPositionMs: Long
     )
 
+    enum class PlaybackTickMode {
+        DETAIL,
+        MINI_PLAYER
+    }
+
     companion object {
+        private const val DETAIL_TICK_INTERVAL_MS = 500L
+        private const val MINI_PLAYER_TICK_INTERVAL_MS = 1_000L
         @Volatile private var instance: PlaybackController? = null
         fun getInstance(context: Context): PlaybackController = instance ?: synchronized(this) { instance ?: PlaybackController(context).also { instance = it } }
     }

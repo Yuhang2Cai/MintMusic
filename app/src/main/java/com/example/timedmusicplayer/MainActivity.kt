@@ -30,6 +30,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.paging.LoadState
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.timedmusicplayer.adapter.TrackLibraryAdapter
 import com.example.timedmusicplayer.artwork.ArtworkRepository
@@ -44,9 +45,8 @@ import com.example.timedmusicplayer.ui.main.MainViewModel
 import com.example.timedmusicplayer.ui.main.MiniPlayerUiState
 import com.example.timedmusicplayer.ui.theme.ThemeColorOption
 import com.example.timedmusicplayer.ui.theme.ThemeColorStore
-import com.example.timedmusicplayer.emotion.MoodAnalysisStore
-import com.example.timedmusicplayer.model.SourceType
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlin.math.hypot
 
@@ -56,11 +56,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var miniBinding: MiniPlayerOverlayBinding
     private lateinit var adapter: TrackLibraryAdapter
     private lateinit var artworkRepository: ArtworkRepository
-    private lateinit var moodAnalysisStore: MoodAnalysisStore
     private lateinit var selectionBackCallback: OnBackPressedCallback
     private lateinit var windowManager: WindowManager
     private lateinit var miniWindowParams: WindowManager.LayoutParams
-    private val selectedTracks = linkedMapOf<String, Track>()
 
     private var activityStarted = false
     private var hasMiniPlayer = false
@@ -71,12 +69,22 @@ class MainActivity : AppCompatActivity() {
     private var miniSnapAnimator: ValueAnimator? = null
     private var miniCoverAnimator: ObjectAnimator? = null
     private var displayedMiniTrackId: String? = null
+    private var shouldShowEmptyLibrary = false
+    private var pagingRefreshInProgress = true
+    private var scrollToTopAfterPagingRefresh = false
+    private var pagingRefreshObservedLoading = false
 
     private val viewModel: MainViewModel by viewModels { AppViewModelFactory(application) }
 
     private val folderPickerLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) takePersistableReadPermission(uri)
         viewModel.onLocalFolderSelected(uri)
+    }
+
+    private val cloudSourceLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        scrollToTopAfterPagingRefresh = true
+        pagingRefreshObservedLoading = false
+        viewModel.onCloudSourceScreenReturned()
     }
 
     private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -95,14 +103,13 @@ class MainActivity : AppCompatActivity() {
         requestNotificationPermissionIfNeeded()
 
         artworkRepository = ArtworkRepository(applicationContext)
-        moodAnalysisStore = MoodAnalysisStore(applicationContext)
-        adapter = TrackLibraryAdapter(::onTrackClicked, ::onTrackLongClicked, ::onTrackMoreClicked)
+        adapter = TrackLibraryAdapter(viewModel::onTrackClicked, viewModel::onTrackLongClicked, viewModel::onTrackMoreClicked)
         setupRecyclerView()
         setupMiniWindow()
         setupActions()
         observeViewModel()
         selectionBackCallback = object : OnBackPressedCallback(false) {
-            override fun handleOnBackPressed() = clearSelection()
+            override fun handleOnBackPressed() = viewModel.clearSelection()
         }
         onBackPressedDispatcher.addCallback(this, selectionBackCallback)
     }
@@ -144,6 +151,18 @@ class MainActivity : AppCompatActivity() {
         binding.rvTracks.itemAnimator = null
         binding.rvTracks.setItemViewCacheSize(24)
         binding.rvTracks.recycledViewPool.setMaxRecycledViews(0, 60)
+        adapter.addLoadStateListener { states ->
+            pagingRefreshInProgress = states.refresh is LoadState.Loading
+            if (scrollToTopAfterPagingRefresh && states.refresh is LoadState.Loading) {
+                pagingRefreshObservedLoading = true
+            }
+            if (scrollToTopAfterPagingRefresh && pagingRefreshObservedLoading && states.refresh is LoadState.NotLoading) {
+                scrollToTopAfterPagingRefresh = false
+                pagingRefreshObservedLoading = false
+                binding.rvTracks.post { binding.rvTracks.scrollToPosition(0) }
+            }
+            updateEmptyLibraryVisibility()
+        }
     }
 
     private fun setupMiniWindow() {
@@ -171,8 +190,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnSelectFolder.setOnClickListener { viewModel.onSelectFolderClicked() }
         binding.btnManageCloud.setOnClickListener { viewModel.onManageCloudClicked() }
         binding.btnResumeLast.setOnClickListener { viewModel.onResumeLastClicked() }
-        binding.btnDeleteSelected.setOnClickListener { confirmDeleteSelection() }
-        binding.btnCancelSelection.setOnClickListener { clearSelection() }
+        binding.btnDeleteAll.setOnClickListener { confirmDeleteAll() }
+        binding.btnDeleteSelected.setOnClickListener { viewModel.onDeleteSelectionClicked() }
+        binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
         binding.chipGroupFilter.setOnCheckedStateChangeListener { _, checkedIds ->
             updateFilterUnderline(checkedIds.firstOrNull())
             val filter = when (checkedIds.firstOrNull()) {
@@ -180,7 +200,6 @@ class MainActivity : AppCompatActivity() {
                 R.id.chipCloud -> TrackFilter.CLOUD
                 else -> TrackFilter.ALL
             }
-            clearSelection()
             viewModel.onFilterSelected(filter)
         }
 
@@ -301,17 +320,33 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { viewModel.uiState.collect(::render) }
                 launch { viewModel.events.collect(::handleEvent) }
-                launch { viewModel.pagingData.collect(adapter::submitData) }
-                launch { moodAnalysisStore.states.collect(adapter::setMoodStates) }
+                launch { viewModel.pagingData.collectLatest(adapter::submitData) }
             }
         }
     }
 
     private fun render(state: MainUiState) {
         binding.tvLibraryCount.text = state.libraryCountText
-        binding.tvEmpty.visibility = if (state.showEmpty) View.VISIBLE else View.GONE
+        binding.libraryScanningContainer.visibility = if (state.isScanningLocalMusic) View.VISIBLE else View.GONE
+        binding.btnSelectFolder.isEnabled = !state.isScanningLocalMusic
+        shouldShowEmptyLibrary = state.showEmpty
+        updateEmptyLibraryVisibility()
         renderFilter(state.activeFilter)
         renderMiniPlayer(state.miniPlayer)
+        adapter.setMoodStates(state.moodStates)
+        renderSelection(state.selectedTrackIds)
+    }
+
+    /**
+     * The count refresh and Paging refresh are asynchronous.  Only show the empty copy after
+     * Paging has settled and confirmed that there are no rendered rows; otherwise it can sit on
+     * top of a freshly loaded list while a previous count still says zero.
+     */
+    private fun updateEmptyLibraryVisibility() {
+        val pagingSettled = !pagingRefreshInProgress
+        val showEmpty = shouldShowEmptyLibrary && pagingSettled && adapter.itemCount == 0 &&
+            binding.libraryScanningContainer.visibility != View.VISIBLE
+        binding.tvEmpty.visibility = if (showEmpty) View.VISIBLE else View.GONE
     }
 
     private fun renderFilter(filter: TrackFilter) {
@@ -370,66 +405,51 @@ class MainActivity : AppCompatActivity() {
         when (event) {
             is MainEvent.ShowMessage -> Toast.makeText(this, event.message, Toast.LENGTH_SHORT).show()
             is MainEvent.TracksDeleted -> {
-                clearSelection()
                 Toast.makeText(this, event.message, Toast.LENGTH_LONG).show()
             }
+            is MainEvent.ShowMoodLabelPicker -> showMoodLabelPicker(event)
+            is MainEvent.ConfirmTrackDeletion -> showDeleteConfirmation(event.tracks)
             is MainEvent.OpenFolderPicker -> folderPickerLauncher.launch(event.initialUri)
             MainEvent.OpenPlayerScreen -> startActivity(Intent(this, PlayerActivity::class.java))
-            MainEvent.OpenCloudSourceScreen -> startActivity(Intent(this, CloudSourceActivity::class.java))
+            MainEvent.OpenCloudSourceScreen -> cloudSourceLauncher.launch(Intent(this, CloudSourceActivity::class.java))
         }
     }
 
-    private fun onTrackClicked(track: Track) {
-        if (selectedTracks.isNotEmpty()) toggleTrackSelection(track) else viewModel.onTrackSelected(track)
-    }
-
-    private fun onTrackLongClicked(track: Track) = toggleTrackSelection(track)
-
-    private fun onTrackMoreClicked(track: Track) {
-        if (track.sourceType != SourceType.LOCAL) return
+    private fun showMoodLabelPicker(event: MainEvent.ShowMoodLabelPicker) {
         val labels = arrayOf(
             getString(R.string.mood_tag_none),
             "温暖", "浪漫", "治愈", "忧郁", "激昂", "恢弘"
         )
-        val current = moodAnalysisStore.states.value[track.id]?.label
-        val selected = labels.indexOf(current).takeIf { it >= 0 } ?: 0
+        val selected = labels.indexOf(event.currentLabel).takeIf { it >= 0 } ?: 0
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.edit_mood_tag_title)
             .setSingleChoiceItems(labels, selected) { dialog, which ->
-                moodAnalysisStore.setLabel(track.id, labels[which].takeUnless { which == 0 })
+                viewModel.onMoodLabelSelected(event.trackId, labels[which].takeUnless { which == 0 })
                 dialog.dismiss()
             }
             .show()
     }
 
-    private fun toggleTrackSelection(track: Track) {
-        if (selectedTracks.remove(track.id) == null) selectedTracks[track.id] = track
-        renderSelection()
-    }
-
-    private fun renderSelection() {
-        val active = selectedTracks.isNotEmpty()
+    private fun renderSelection(selectedTrackIds: Set<String>) {
+        val active = selectedTrackIds.isNotEmpty()
         binding.selectionBar.visibility = if (active) View.VISIBLE else View.GONE
-        binding.tvSelectionCount.text = getString(R.string.selected_tracks_count, selectedTracks.size)
-        adapter.setSelection(selectedTracks.keys, active)
+        binding.tvSelectionCount.text = getString(R.string.selected_tracks_count, selectedTrackIds.size)
+        adapter.setSelection(selectedTrackIds, active)
         selectionBackCallback.isEnabled = active
     }
 
-    private fun clearSelection() {
-        if (selectedTracks.isEmpty()) return
-        selectedTracks.clear()
-        renderSelection()
-    }
-
-    private fun confirmDeleteSelection() {
-        val tracks = selectedTracks.values.toList()
-        if (tracks.isEmpty()) return
+    private fun showDeleteConfirmation(tracks: List<Track>) {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.delete_tracks_title)
             .setMessage(getString(R.string.delete_tracks_message, tracks.size))
             .setNegativeButton(R.string.cancel, null)
             .setPositiveButton(R.string.delete) { _, _ -> viewModel.onDeleteTracksConfirmed(tracks) }
             .show()
+    }
+
+    private fun confirmDeleteAll() {
+        val tracks = adapter.snapshot().items
+        viewModel.onDeleteAllClicked(tracks)
     }
 
     private fun showThemeColorDialog() {

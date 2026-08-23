@@ -162,7 +162,6 @@
                 android:layout_width="match_parent"
                 android:layout_height="72dp"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_spectrum_editorial"
                 android:contentDescription="@string/audio_spectrum"
                 android:paddingStart="14dp"
                 android:paddingTop="14dp"

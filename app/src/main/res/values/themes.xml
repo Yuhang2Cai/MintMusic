@@ -25,7 +25,7 @@
         <item name="colorSecondary">@color/theme_blue_accent</item>
         <item name="colorSecondaryVariant">@color/theme_blue_primary</item>
         <item name="themeSoftColor">@color/theme_blue_soft</item>
-        <item name="android:statusBarColor">@color/theme_blue_dark</item>
+        <item name="android:statusBarColor">@color/app_background</item>
     </style>
 
     <style name="Theme.TimedMusicPlayer.Teal" parent="Theme.TimedMusicPlayer.Base">
@@ -34,7 +34,7 @@
         <item name="colorSecondary">@color/theme_teal_accent</item>
         <item name="colorSecondaryVariant">@color/theme_teal_primary</item>
         <item name="themeSoftColor">@color/theme_teal_soft</item>
-        <item name="android:statusBarColor">@color/theme_teal_dark</item>
+        <item name="android:statusBarColor">@color/app_background</item>
     </style>
 
     <style name="Theme.TimedMusicPlayer.Purple" parent="Theme.TimedMusicPlayer.Base">
@@ -43,7 +43,7 @@
         <item name="colorSecondary">@color/theme_purple_accent</item>
         <item name="colorSecondaryVariant">@color/theme_purple_primary</item>
         <item name="themeSoftColor">@color/theme_purple_soft</item>
-        <item name="android:statusBarColor">@color/theme_purple_dark</item>
+        <item name="android:statusBarColor">@color/app_background</item>
     </style>
 
     <style name="Theme.TimedMusicPlayer.Indigo" parent="Theme.TimedMusicPlayer.Base">
@@ -52,7 +52,7 @@
         <item name="colorSecondary">@color/theme_indigo_accent</item>
         <item name="colorSecondaryVariant">@color/theme_indigo_primary</item>
         <item name="themeSoftColor">@color/theme_indigo_soft</item>
-        <item name="android:statusBarColor">@color/theme_indigo_dark</item>
+        <item name="android:statusBarColor">@color/app_background</item>
     </style>
 
     <style name="Theme.TimedMusicPlayer.Pink" parent="Theme.TimedMusicPlayer.Base">
@@ -61,7 +61,7 @@
         <item name="colorSecondary">@color/theme_pink_accent</item>
         <item name="colorSecondaryVariant">@color/theme_pink_primary</item>
         <item name="themeSoftColor">@color/theme_pink_soft</item>
-        <item name="android:statusBarColor">@color/theme_pink_dark</item>
+        <item name="android:statusBarColor">@color/app_background</item>
     </style>
 
     <style name="Theme.TimedMusicPlayer.Orange" parent="Theme.TimedMusicPlayer.Base">
@@ -70,7 +70,7 @@
         <item name="colorSecondary">@color/theme_orange_accent</item>
         <item name="colorSecondaryVariant">@color/theme_orange_primary</item>
         <item name="themeSoftColor">@color/theme_orange_soft</item>
-        <item name="android:statusBarColor">@color/theme_orange_dark</item>
+        <item name="android:statusBarColor">@color/app_background</item>
     </style>
 
     <style name="Theme.TimedMusicPlayer.Red" parent="Theme.TimedMusicPlayer.Base">
@@ -79,7 +79,7 @@
         <item name="colorSecondary">@color/theme_red_accent</item>
         <item name="colorSecondaryVariant">@color/theme_red_primary</item>
         <item name="themeSoftColor">@color/theme_red_soft</item>
-        <item name="android:statusBarColor">@color/theme_red_dark</item>
+        <item name="android:statusBarColor">@color/app_background</item>
     </style>
 
     <style name="MintWaveCircularCover">

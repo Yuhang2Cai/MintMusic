@@ -17,6 +17,7 @@
 
     <string name="library_count">%1$d tracks</string>
     <string name="library_loading">Loading library...</string>
+    <string name="scanning_local_music">Scanning local music</string>
     <string name="library_empty_tip">No music yet. Select a local folder or add online sources first.</string>
     <string name="no_folder_selected">No local folder selected</string>
     <string name="selected_folder_short">Folder: %1$s</string>

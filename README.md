@@ -10,11 +10,7 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 通过 Android Storage Access Framework 选择音乐文件夹；应用会读取曲目信息与内嵌封面，并支持“全部 / 本地 / 云端”快速筛选。
 
-
-
 <img title="" src="file:///C:/Users/caid0/Documents/library-and-filter.gif" alt="library-and-filter.gif" width="261" data-align="center">
-
-
 
 <!-- ![本地曲库扫描与筛选](docs/assets/demos/library-and-filter.gif) -->
 
@@ -32,15 +28,11 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 <img title="" src="file:///C:/Users/caid0/Documents/synced-lyrics.gif" alt="synced-lyrics.gif" width="244" data-align="center">
 
-
-
 <!-- ![在线同步歌词](docs/assets/demos/synced-lyrics.gif) -->
 
 ### 主题颜色
 
 内置薄荷绿、天空蓝、青色、紫色、靛蓝、粉色、橙色和红色八套主题，并适配系统深色模式。
-
-
 
 <img title="" src="file:///C:/Users/caid0/Documents/synced-lyrics.gif" alt="synced-lyrics.gif" width="244" data-align="center">
 
@@ -50,7 +42,9 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 可以维护 HTTP/HTTPS 音频流，设置名称和可选封面 URL，并从在线音源列表直接开始播放。
 
-> GIF 预留：`docs/assets/demos/cloud-sources.gif`
+<img title="" src="file:///C:/Users/caid0/Documents/cloud-sources.gif" alt="cloud-sources.gif" width="268" data-align="center">
+
+
 
 <!-- ![在线音源管理](docs/assets/demos/cloud-sources.gif) -->
 
@@ -58,11 +52,7 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 本地歌曲可上传到自建 Music2Emo 服务分析情绪标签、愉悦度和能量。服务完成推理后会删除临时音频。
 
-
-
 <img title="" src="file:///C:/Users/caid0/Documents/mood-analysis.gif" alt="mood-analysis.gif" width="299" data-align="center">
-
-
 
 <!-- ![歌曲情绪分析](docs/assets/demos/mood-analysis.gif) -->
 
@@ -133,15 +123,15 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 ## 技术架构
 
-| 层级   | 主要实现                                   | 职责                     |
-| ---- | -------------------------------------- | ---------------------- |
-| UI   | AppCompat、XML、ViewBinding、RecyclerView | 曲库、播放器、在线音源和主题界面       |
-| 状态   | ViewModel、StateFlow                    | 合并曲库、播放、歌词与情绪状态        |
-| 播放   | Media3 ExoPlayer、MediaSessionService   | 后台播放、媒体会话、队列和系统控制      |
-| 数据   | Room、DataStore                         | 曲库索引、播放历史、队列与轻量设置      |
-| 后台任务 | WorkManager                            | 歌词查询和歌曲情绪分析            |
-| 网络   | OkHttp、Media3 OkHttp DataSource        | API 请求、在线流播放和弱网恢复      |
-| 图片   | Coil                                   | 本地封面和远程封面加载与缓存         |
+| 层级   | 主要实现                                   | 职责                   |
+| ---- | -------------------------------------- | -------------------- |
+| UI   | AppCompat、XML、ViewBinding、RecyclerView | 曲库、播放器、在线音源和主题界面     |
+| 状态   | ViewModel、StateFlow                    | 合并曲库、播放、歌词与情绪状态      |
+| 播放   | Media3 ExoPlayer、MediaSessionService   | 后台播放、媒体会话、队列和系统控制    |
+| 数据   | Room、DataStore                         | 曲库索引、播放历史、队列与轻量设置    |
+| 后台任务 | WorkManager                            | 歌词查询和歌曲情绪分析          |
+| 网络   | OkHttp、Media3 OkHttp DataSource        | API 请求、在线流播放和弱网恢复    |
+| 图片   | Coil                                   | 本地封面和远程封面加载与缓存       |
 | 辅助服务 | FastAPI                                | 同步歌词匹配和 Music2Emo 推理 |
 
 播放进度每 500 ms 更新一次可见 UI；持久化采用节流策略，并在暂停、切歌、拖动和错误等关键节点立即保存。Room 是曲库、在线音源、播放队列和历史记录的主要数据源，DataStore 保存目录与播放模式等轻量设置。
@@ -214,10 +204,10 @@ curl http://127.0.0.1:8000/health
 
 服务接口：
 
-| 方法   | 路径                   | 说明             |
-| ---- | -------------------- | -------------- |
-| GET  | `/health`            | 服务状态和歌词模式      |
-| GET  | `/v1/lyrics/lookup`  | 按元数据查询同步歌词     |
+| 方法   | 路径                   | 说明           |
+| ---- | -------------------- | ------------ |
+| GET  | `/health`            | 服务状态和歌词模式    |
+| GET  | `/v1/lyrics/lookup`  | 按元数据查询同步歌词   |
 | POST | `/v1/music-emotions` | 上传本地歌曲进行情绪分析 |
 
 可用环境变量：
@@ -229,9 +219,9 @@ curl http://127.0.0.1:8000/health
 | `MINT_LRCLIB_URL`            | `https://lrclib.net/api/get` | LRCLIB 地址          |
 | `MINT_MUSIC2EMO_HOME`        | 无                            | Music2Emotion 项目目录 |
 
-## 部署 Music2Emotion（必需）
+## 部署 Music2Emotion
 
-歌曲情绪分析依赖 Music2Emotion。未部署模型或 CUDA 运行环境时，应用会明确提示分析失败。建议在具备 NVIDIA GPU 与 CUDA 的 Windows 主机部署；CPU 仅适合排障，不建议日常推理。
+歌曲情绪分析依赖 Music2Emotion。
 
 1. 创建 Python 环境并安装 FastAPI 依赖：
 
@@ -262,8 +252,5 @@ $env:MINT_MUSIC2EMO_HOME = (Resolve-Path server\vendor\Music2Emotion)
 
 ## 当前限制
 
-- 在线歌词和情绪分析依赖开发电脑上的 FastAPI 服务。
-- 歌词仅接受带时间轴的 LRC，不展示无时间轴纯文本歌词。
-- 情绪分析仅支持本地歌曲，且必须部署 Music2Emotion、Python 与 CUDA 推理环境。
+- 情绪分析仅支持本地歌曲，且必须部署 Music2Emotion、Python环境。
 - 在线音源需要提供可由 Media3 直接播放的 HTTP/HTTPS 音频流，受 DRM 保护的地址不受支持。
-- 当前 Release 构建尚未启用代码压缩和混淆。

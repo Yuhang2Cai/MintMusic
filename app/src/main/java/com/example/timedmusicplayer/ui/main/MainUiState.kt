@@ -2,12 +2,16 @@
 
 import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.emotion.MoodAnalysisState
 
 data class MainUiState(
     val activeFilter: TrackFilter = TrackFilter.ALL,
     val libraryCountText: String = "",
     val showEmpty: Boolean = false,
-    val miniPlayer: MiniPlayerUiState? = null
+    val isScanningLocalMusic: Boolean = false,
+    val miniPlayer: MiniPlayerUiState? = null,
+    val selectedTrackIds: Set<String> = emptySet(),
+    val moodStates: Map<String, MoodAnalysisState> = emptyMap()
 )
 
 data class MiniPlayerUiState(

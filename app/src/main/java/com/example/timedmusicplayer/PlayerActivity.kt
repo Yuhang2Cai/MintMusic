@@ -20,22 +20,14 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.C
-import androidx.work.Data
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import com.example.timedmusicplayer.databinding.ActivityPlayerEditorialBinding
 import com.example.timedmusicplayer.artwork.ArtworkRepository
 import com.example.timedmusicplayer.playback.AudioVisualizerController
-import com.example.timedmusicplayer.lyrics.GenerateLyricsWorker
-import com.example.timedmusicplayer.lyrics.LyricFiles
 import com.example.timedmusicplayer.lyrics.LyricLine
 import com.example.timedmusicplayer.lyrics.LyricPageView
-import com.example.timedmusicplayer.emotion.AnalyzeMoodWorker
-import com.example.timedmusicplayer.emotion.MoodAnalysisStore
-import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.ui.AppViewModelFactory
+import com.example.timedmusicplayer.ui.player.MoodResultUi
+import com.example.timedmusicplayer.ui.player.PlayerEvent
 import com.example.timedmusicplayer.ui.player.PlayerUiState
 import com.example.timedmusicplayer.ui.player.PlayerViewModel
 import com.example.timedmusicplayer.ui.theme.ThemeColorStore
@@ -43,7 +35,6 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.chip.Chip
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.util.UUID
 
 class PlayerActivity : AppCompatActivity() {
 
@@ -57,14 +48,10 @@ class PlayerActivity : AppCompatActivity() {
     private var isSeekBarTracking = false
     private lateinit var lyricPage: LyricPageView
     private var lyricLines: List<LyricLine> = emptyList()
-    private var lyricTrackId: String? = null
+    private var displayedLyricTrackId: String? = null
     private var showingLyrics = false
     private var touchDownX = 0f
     private var touchDownY = 0f
-    private lateinit var moodAnalysisStore: MoodAnalysisStore
-    private var lyricsFetchingTrackId: String? = null
-    private var lyricsFetchingWorkId: UUID? = null
-    private var latestMoodStates: Map<String, com.example.timedmusicplayer.emotion.MoodAnalysisState> = emptyMap()
     private val visualizerController by lazy {
         AudioVisualizerController { fft, samplingRate ->
             binding.spectrumView.post {
@@ -100,7 +87,6 @@ class PlayerActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = ""
-        moodAnalysisStore = MoodAnalysisStore(applicationContext)
 
         initCoverRotation()
         applyCoverArt()
@@ -139,13 +125,14 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.action_generate_lyrics -> {
-            showGenerateLyricsDialog()
+            // Close the overflow popup before the ViewModel requests a modal dialog.
+            binding.root.post { viewModel.onGenerateLyricsClicked() }
             true
         }
         R.id.action_analyze_mood -> {
             // Let AppCompat close the overflow popup before showing a modal.
             // Otherwise the popup remains visibly layered behind the dialog.
-            binding.root.post { showAnalyzeMoodDialog() }
+            binding.root.post { viewModel.onAnalyzeMoodClicked() }
             true
         }
         else -> super.onOptionsItemSelected(item)
@@ -220,18 +207,27 @@ class PlayerActivity : AppCompatActivity() {
                         render(state)
                     }
                 }
-                launch {
-                    moodAnalysisStore.states.collect { states ->
-                        renderMoodAnalysis(states)
-                    }
-                }
+                launch { viewModel.events.collect(::handleEvent) }
             }
+        }
+    }
+
+    private fun handleEvent(event: PlayerEvent) {
+        when (event) {
+            is PlayerEvent.ShowMessage -> Toast.makeText(
+                this,
+                event.message,
+                if (event.long) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
+            ).show()
+            is PlayerEvent.ShowMoodResult -> showMoodResult(event.result)
+            PlayerEvent.ConfirmLyricsGeneration -> showGenerateLyricsDialog()
+            PlayerEvent.ConfirmMoodAnalysis -> showAnalyzeMoodDialog()
         }
     }
 
     private fun render(state: PlayerUiState) {
         latestState = state
-        renderMoodAnalysis(moodAnalysisStore.states.value)
+        renderMoodAnalysis(state)
         binding.tvTrackTitle.text = state.title
         binding.tvTrackArtist.text = state.subtitle.orEmpty()
         binding.tvStatus.text = state.statusText
@@ -266,8 +262,8 @@ class PlayerActivity : AppCompatActivity() {
         if (state.currentTrack?.id != displayedCoverId) {
             displayedCoverId = state.currentTrack?.id
             artwork.load(binding.ivCover, state.currentTrack, 512)
-            loadLyrics(state)
         }
+        renderLyrics(state)
         lyricPage.updatePosition(state.positionMs)
 
         if (state.isPlaying) {
@@ -290,19 +286,13 @@ class PlayerActivity : AppCompatActivity() {
         )
     }
 
-    private fun loadLyrics(state: PlayerUiState) {
-        val track = state.currentTrack
-        lyricTrackId = track?.id
-        lyricLines = track?.let { LyricFiles.read(this, it.id) }.orEmpty()
-        lyricPage.setLyrics(track?.title.orEmpty(), lyricLines)
-        renderMoodAnalysis(latestMoodStates)
+    private fun renderLyrics(state: PlayerUiState) {
+        if (displayedLyricTrackId == state.lyricTrackId && lyricLines == state.lyrics) return
+        displayedLyricTrackId = state.lyricTrackId
+        lyricLines = state.lyrics
+        lyricPage.setLyrics(state.title, lyricLines)
         updatePageIndicator()
         if (lyricLines.isEmpty()) hideLyrics(immediate = true)
-        Toast.makeText(
-            this,
-            if (lyricLines.isNotEmpty()) R.string.lyrics_swipe_hint else R.string.ready_to_play,
-            Toast.LENGTH_SHORT
-        ).takeIf { lyricLines.isNotEmpty() }?.show()
     }
 
     private fun showLyrics() {
@@ -326,121 +316,31 @@ class PlayerActivity : AppCompatActivity() {
     }
 
     private fun showGenerateLyricsDialog() {
-        val track = latestState.currentTrack ?: return
-        if (track.isStream) {
-            Toast.makeText(this, R.string.lyrics_local_only, Toast.LENGTH_SHORT).show()
-            return
-        }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.lyrics_lookup_title)
             .setMessage(R.string.lyrics_lookup_message)
             .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.generate_lyrics) { _, _ ->
-                enqueueLyrics(track)
-            }.show()
-    }
-
-    private fun enqueueLyrics(track: Track) {
-        val trackId = track.id
-        val input = Data.Builder()
-            .putString(GenerateLyricsWorker.KEY_TRACK_ID, trackId)
-            .putString(GenerateLyricsWorker.KEY_TITLE, track.title)
-            .putString(GenerateLyricsWorker.KEY_ARTIST, track.artist)
-            .putString(GenerateLyricsWorker.KEY_ALBUM, track.album)
-            .putLong(GenerateLyricsWorker.KEY_DURATION_SECONDS, track.durationMs / 1_000L)
-            .build()
-        val request = OneTimeWorkRequestBuilder<GenerateLyricsWorker>()
-            .setInputData(input)
-            .addTag("lyrics:$trackId")
-            .build()
-        val manager = WorkManager.getInstance(this)
-        // The screen can be opened before the playback-state collector emits its
-        // first value. Anchor the loading state to the requested detail track now.
-        lyricTrackId = trackId
-        lyricsFetchingTrackId = trackId
-        lyricsFetchingWorkId = request.id
-        renderMoodAnalysis(latestMoodStates)
-        manager.enqueueUniqueWork("lyrics:$trackId", ExistingWorkPolicy.REPLACE, request)
-        Toast.makeText(this, R.string.lyrics_started, Toast.LENGTH_SHORT).show()
-        manager.getWorkInfoByIdLiveData(request.id).observe(this) { info ->
-            when (info?.state) {
-                WorkInfo.State.SUCCEEDED -> if (lyricsFetchingTrackId == trackId && lyricsFetchingWorkId == request.id) {
-                    lyricsFetchingTrackId = null
-                    lyricsFetchingWorkId = null
-                    renderMoodAnalysis(latestMoodStates)
-                    if (lyricTrackId == trackId) {
-                        lyricLines = LyricFiles.read(this, trackId)
-                        lyricPage.setLyrics(latestState.title, lyricLines)
-                        updatePageIndicator()
-                        Toast.makeText(this, R.string.lyrics_completed, Toast.LENGTH_LONG).show()
-                    }
-                }
-                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> if (lyricsFetchingTrackId == trackId && lyricsFetchingWorkId == request.id) {
-                    lyricsFetchingTrackId = null
-                    lyricsFetchingWorkId = null
-                    renderMoodAnalysis(latestMoodStates)
-                    Toast.makeText(this, getString(R.string.lyrics_failed, info.outputData.getString(GenerateLyricsWorker.KEY_ERROR).orEmpty()), Toast.LENGTH_LONG).show()
-                }
-                else -> Unit
-            }
-        }
+            .setPositiveButton(R.string.generate_lyrics) { _, _ -> viewModel.onGenerateLyricsConfirmed() }
+            .show()
     }
 
     private fun showAnalyzeMoodDialog() {
-        val track = latestState.currentTrack ?: return
-        if (track.isStream) {
-            Toast.makeText(this, R.string.music_mood_local_only, Toast.LENGTH_SHORT).show()
-            return
-        }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.music_mood_title)
             .setMessage(R.string.music_mood_message)
             .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(R.string.music_mood_start) { _, _ -> enqueueMoodAnalysis(track) }
+            .setPositiveButton(R.string.music_mood_start) { _, _ -> viewModel.onAnalyzeMoodConfirmed() }
             .show()
     }
 
-    private fun enqueueMoodAnalysis(track: Track) {
-        moodAnalysisStore.markAnalyzing(track.id)
-        val request = OneTimeWorkRequestBuilder<AnalyzeMoodWorker>()
-            .setInputData(Data.Builder()
-                .putString(AnalyzeMoodWorker.KEY_URI, track.uri)
-                .putString(AnalyzeMoodWorker.KEY_TRACK_ID, track.id)
-                .putString(AnalyzeMoodWorker.KEY_TITLE, track.title)
-                .putString(AnalyzeMoodWorker.KEY_MIME_TYPE, track.mimeType)
-                .build())
-            .addTag("music-emotion:${track.id}")
-            .build()
-        val manager = WorkManager.getInstance(this)
-        manager.enqueueUniqueWork("music-emotion:${track.id}", ExistingWorkPolicy.REPLACE, request)
-        Toast.makeText(this, R.string.music_mood_started, Toast.LENGTH_SHORT).show()
-        manager.getWorkInfoByIdLiveData(request.id).observe(this) { info ->
-            when (info?.state) {
-                WorkInfo.State.SUCCEEDED -> showMoodResult(
-                    info.outputData.getString(AnalyzeMoodWorker.KEY_MOODS).orEmpty(),
-                    info.outputData.getDouble(AnalyzeMoodWorker.KEY_VALENCE, Double.NaN),
-                    info.outputData.getDouble(AnalyzeMoodWorker.KEY_AROUSAL, Double.NaN)
-                )
-                WorkInfo.State.FAILED -> Toast.makeText(
-                    this,
-                    getString(R.string.music_mood_failed, info.outputData.getString(AnalyzeMoodWorker.KEY_ERROR).orEmpty()),
-                    Toast.LENGTH_LONG
-                ).show()
-                else -> Unit
-            }
-        }
-    }
-
-    private fun showMoodResult(moods: String, valence: Double, arousal: Double) {
+    private fun showMoodResult(result: MoodResultUi) {
         fun score(value: Double) = if (value.isNaN()) "—" else String.format(java.util.Locale.getDefault(), "%.2f", value)
         val content = layoutInflater.inflate(R.layout.dialog_mood_result, null)
-        content.findViewById<android.widget.TextView>(R.id.tvMoodDialogTrack).text = latestState.title
-        content.findViewById<android.widget.TextView>(R.id.tvMoodValence).text = score(valence)
-        content.findViewById<android.widget.TextView>(R.id.tvMoodArousal).text = score(arousal)
-        val labels = moods.split(',', '·', '|').map(String::trim).filter(String::isNotBlank).take(4)
-        val translated = mapOf("sad" to "忧郁", "melancholic" to "忧郁", "romantic" to "浪漫", "love" to "浪漫", "powerful" to "激昂", "motivational" to "励志", "hopeful" to "希望", "ballad" to "抒情", "epic" to "史诗感", "dramatic" to "戏剧感", "drama" to "戏剧感", "adventure" to "冒险", "dark" to "暗黑", "emotional" to "感性")
+        content.findViewById<android.widget.TextView>(R.id.tvMoodDialogTrack).text = result.trackTitle
+        content.findViewById<android.widget.TextView>(R.id.tvMoodValence).text = score(result.valence)
+        content.findViewById<android.widget.TextView>(R.id.tvMoodArousal).text = score(result.arousal)
         val chips = content.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipMoodResult)
-        (labels.map { translated[it.lowercase()] ?: it }.ifEmpty { listOf(getString(R.string.music_mood_no_label)) }).forEach { label ->
+        result.labels.ifEmpty { listOf(getString(R.string.music_mood_no_label)) }.forEach { label ->
             chips.addView(Chip(this).apply { text = label; isClickable = false; isCheckable = false; setChipBackgroundColorResource(R.color.app_surface); setTextColor(ContextCompat.getColor(this@PlayerActivity, R.color.app_text_primary)) })
         }
         MaterialAlertDialogBuilder(this)
@@ -449,21 +349,14 @@ class PlayerActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun renderMoodAnalysis(states: Map<String, com.example.timedmusicplayer.emotion.MoodAnalysisState>) {
-        latestMoodStates = states
-        val mood = latestState.currentTrack?.id?.let(states::get)
-        val analyzing = mood?.isAnalyzing == true
-        // lyricTrackId belongs to this detail screen. The player service can move to a
-        // different track while this activity is still visible, so it must not decide
-        // the screen's loading state.
-        val lyricsFetching = lyricsFetchingTrackId == lyricTrackId && lyricsFetchingWorkId != null
-        val processing = lyricsFetching || analyzing
-        binding.topMoodAnalysisContainer.visibility = if (processing || !mood?.label.isNullOrBlank()) View.VISIBLE else View.GONE
+    private fun renderMoodAnalysis(state: PlayerUiState) {
+        val processing = state.isLyricsLoading || state.isMoodAnalyzing
+        binding.topMoodAnalysisContainer.visibility = if (processing || !state.moodLabel.isNullOrBlank()) View.VISIBLE else View.GONE
         binding.topMoodIndicator.visibility = if (processing) View.VISIBLE else View.GONE
         binding.tvTopMoodLabel.text = when {
-            lyricsFetching -> getString(R.string.lyrics_matching)
-            analyzing -> getString(R.string.music_mood_analyzing)
-            else -> mood?.label.orEmpty()
+            state.isLyricsLoading -> getString(R.string.lyrics_matching)
+            state.isMoodAnalyzing -> getString(R.string.music_mood_analyzing)
+            else -> state.moodLabel.orEmpty()
         }
         binding.tvTopMoodLabel.setBackgroundResource(if (processing) android.R.color.transparent else R.drawable.bg_mood_tag)
         binding.tvPlayerMoodTag.visibility = View.GONE

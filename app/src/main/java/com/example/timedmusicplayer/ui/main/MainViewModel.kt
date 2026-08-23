@@ -7,9 +7,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import com.example.timedmusicplayer.R
 import com.example.timedmusicplayer.data.MusicRepository
+import com.example.timedmusicplayer.emotion.MoodAnalysisStore
 import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.model.SourceType
 import com.example.timedmusicplayer.playback.PlaybackController
+import com.example.timedmusicplayer.playback.PlaybackController.PlaybackTickMode
 import com.example.timedmusicplayer.playback.PlaybackSnapshot
 import com.example.timedmusicplayer.ui.common.PlaybackUiFormatter
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +23,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -28,7 +32,8 @@ import kotlinx.coroutines.withContext
 class MainViewModel(
     application: Application,
     private val repository: MusicRepository,
-    private val playbackController: PlaybackController
+    private val playbackController: PlaybackController,
+    private val moodAnalysisStore: MoodAnalysisStore
 ) : AndroidViewModel(application) {
 
     private val app = application.applicationContext
@@ -39,11 +44,15 @@ class MainViewModel(
 
     private var loadJob: Job? = null
     private val filterValue = MutableStateFlow(TrackFilter.ALL)
+    private val pagingRefreshVersion = MutableStateFlow(0L)
+    private val selectedTracks = linkedMapOf<String, Track>()
 
     val uiState: StateFlow<MainUiState> = uiStateValue.asStateFlow()
     val events = eventChannel.receiveAsFlow()
     @OptIn(ExperimentalCoroutinesApi::class)
-    val pagingData = filterValue.flatMapLatest(repository::pagingTracks).cachedIn(viewModelScope)
+    val pagingData = combine(filterValue, pagingRefreshVersion) { filter, _ -> filter }
+        .flatMapLatest(repository::pagingTracks)
+        .cachedIn(viewModelScope)
 
     init {
         val restoredFilter = runCatching {
@@ -58,18 +67,24 @@ class MainViewModel(
                 )
             }
         }
+        viewModelScope.launch {
+            moodAnalysisStore.states.collect { states ->
+                uiStateValue.value = uiStateValue.value.copy(moodStates = states)
+            }
+        }
         loadLibrary(forceRefresh = false)
     }
 
     fun onStart() {
-        playbackController.connect()
+        playbackController.connect(PlaybackTickMode.MINI_PLAYER)
     }
 
     fun onStop() {
-        playbackController.disconnect()
+        playbackController.disconnect(PlaybackTickMode.MINI_PLAYER)
     }
 
     fun onResume() {
+        if (uiStateValue.value.isScanningLocalMusic) return
         loadLibrary(forceRefresh = false)
     }
 
@@ -80,6 +95,7 @@ class MainViewModel(
         uiStateValue.value = uiStateValue.value.copy(activeFilter = filter)
         filterValue.value = filter
         repository.saveSelectedFilter(filter.name)
+        clearSelection()
         loadLibrary(forceRefresh = false)
     }
 
@@ -101,6 +117,12 @@ class MainViewModel(
         viewModelScope.launch {
             eventChannel.send(MainEvent.OpenCloudSourceScreen)
         }
+    }
+
+    fun onCloudSourceScreenReturned() {
+        clearSelection()
+        pagingRefreshVersion.value += 1L
+        loadLibrary(forceRefresh = false)
     }
 
     fun onResumeLastClicked() {
@@ -135,7 +157,63 @@ class MainViewModel(
         }
     }
 
-    fun onTrackSelected(track: Track) {
+    fun onTrackClicked(track: Track) {
+        if (selectedTracks.isNotEmpty()) {
+            toggleTrackSelection(track)
+        } else {
+            playTrack(track)
+        }
+    }
+
+    fun onTrackLongClicked(track: Track) {
+        toggleTrackSelection(track)
+    }
+
+    fun onTrackMoreClicked(track: Track) {
+        if (track.sourceType != SourceType.LOCAL) return
+        viewModelScope.launch {
+            eventChannel.send(
+                MainEvent.ShowMoodLabelPicker(
+                    trackId = track.id,
+                    currentLabel = moodAnalysisStore.states.value[track.id]?.label
+                )
+            )
+        }
+    }
+
+    fun onMoodLabelSelected(trackId: String, label: String?) {
+        moodAnalysisStore.setLabel(trackId, label)
+    }
+
+    fun clearSelection() {
+        if (selectedTracks.isEmpty()) return
+        selectedTracks.clear()
+        publishSelection()
+    }
+
+    fun onDeleteSelectionClicked() {
+        requestDeleteConfirmation(selectedTracks.values.toList())
+    }
+
+    fun onDeleteAllClicked(visibleTracks: List<Track>) {
+        requestDeleteConfirmation(visibleTracks)
+    }
+
+    private fun requestDeleteConfirmation(tracks: List<Track>) {
+        if (tracks.isEmpty()) return
+        viewModelScope.launch { eventChannel.send(MainEvent.ConfirmTrackDeletion(tracks)) }
+    }
+
+    private fun toggleTrackSelection(track: Track) {
+        if (selectedTracks.remove(track.id) == null) selectedTracks[track.id] = track
+        publishSelection()
+    }
+
+    private fun publishSelection() {
+        uiStateValue.value = uiStateValue.value.copy(selectedTrackIds = selectedTracks.keys.toSet())
+    }
+
+    private fun playTrack(track: Track) {
         viewModelScope.launch {
             val tracks = withContext(Dispatchers.IO) {
                 repository.getTracks(uiStateValue.value.activeFilter, forceRefresh = false)
@@ -151,6 +229,7 @@ class MainViewModel(
         if (tracks.isEmpty()) return
         viewModelScope.launch {
             val result = withContext(Dispatchers.IO) { repository.deleteTracks(tracks) }
+            clearSelection()
             loadLibrary(forceRefresh = false)
             val message = if (result.failed == 0) {
                 app.getString(R.string.delete_tracks_success, result.deleted)
@@ -188,7 +267,9 @@ class MainViewModel(
         val currentState = uiStateValue.value
         if (forceRefresh) {
             uiStateValue.value = currentState.copy(
-                libraryCountText = app.getString(R.string.library_loading)
+                libraryCountText = app.getString(R.string.library_loading),
+                showEmpty = false,
+                isScanningLocalMusic = true
             )
         }
 
@@ -200,7 +281,8 @@ class MainViewModel(
             }
             uiStateValue.value = uiStateValue.value.copy(
                 libraryCountText = app.getString(R.string.library_count, count),
-                showEmpty = count == 0
+                showEmpty = count == 0,
+                isScanningLocalMusic = false
             )
         }
     }
@@ -249,6 +331,8 @@ sealed class MainEvent {
     data class ShowMessage(val message: String) : MainEvent()
     data class TracksDeleted(val message: String) : MainEvent()
     data class OpenFolderPicker(val initialUri: Uri?) : MainEvent()
+    data class ShowMoodLabelPicker(val trackId: String, val currentLabel: String?) : MainEvent()
+    data class ConfirmTrackDeletion(val tracks: List<Track>) : MainEvent()
     object OpenPlayerScreen : MainEvent()
     object OpenCloudSourceScreen : MainEvent()
 }
