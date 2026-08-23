@@ -190,7 +190,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnSelectFolder.setOnClickListener { viewModel.onSelectFolderClicked() }
         binding.btnManageCloud.setOnClickListener { viewModel.onManageCloudClicked() }
         binding.btnResumeLast.setOnClickListener { viewModel.onResumeLastClicked() }
-        binding.btnDeleteAll.setOnClickListener { confirmDeleteAll() }
+        binding.btnDeleteAll.setOnClickListener { viewModel.onDeleteAllClicked() }
         binding.btnDeleteSelected.setOnClickListener { viewModel.onDeleteSelectionClicked() }
         binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
         binding.chipGroupFilter.setOnCheckedStateChangeListener { _, checkedIds ->
@@ -409,17 +409,16 @@ class MainActivity : AppCompatActivity() {
             }
             is MainEvent.ShowMoodLabelPicker -> showMoodLabelPicker(event)
             is MainEvent.ConfirmTrackDeletion -> showDeleteConfirmation(event.tracks)
+            is MainEvent.ConfirmDeleteAll -> showDeleteAllConfirmation(event)
             is MainEvent.OpenFolderPicker -> folderPickerLauncher.launch(event.initialUri)
             MainEvent.OpenPlayerScreen -> startActivity(Intent(this, PlayerActivity::class.java))
             MainEvent.OpenCloudSourceScreen -> cloudSourceLauncher.launch(Intent(this, CloudSourceActivity::class.java))
+            MainEvent.RecreateForTheme -> recreate()
         }
     }
 
     private fun showMoodLabelPicker(event: MainEvent.ShowMoodLabelPicker) {
-        val labels = arrayOf(
-            getString(R.string.mood_tag_none),
-            "温暖", "浪漫", "治愈", "忧郁", "激昂", "恢弘"
-        )
+        val labels = (listOf(getString(R.string.mood_tag_none)) + event.labels).toTypedArray()
         val selected = labels.indexOf(event.currentLabel).takeIf { it >= 0 } ?: 0
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.edit_mood_tag_title)
@@ -447,15 +446,20 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun confirmDeleteAll() {
-        val tracks = adapter.snapshot().items
-        viewModel.onDeleteAllClicked(tracks)
+    private fun showDeleteAllConfirmation(event: MainEvent.ConfirmDeleteAll) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.delete_tracks_title)
+            .setMessage(getString(R.string.delete_tracks_message, event.count))
+            .setNegativeButton(R.string.cancel, null)
+            .setPositiveButton(R.string.delete) { _, _ -> viewModel.onDeleteAllConfirmed(event.filter) }
+            .show()
     }
 
     private fun showThemeColorDialog() {
         val options = ThemeColorOption.entries
         val labels = options.map { getString(it.labelRes) }.toTypedArray()
-        val selectedIndex = options.indexOf(ThemeColorStore.current(this))
+        val selectedTheme = viewModel.uiState.value.selectedTheme
+        val selectedIndex = options.indexOf(selectedTheme)
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.choose_theme_color)
             .setSingleChoiceItems(labels, selectedIndex, null)
@@ -464,13 +468,8 @@ class MainActivity : AppCompatActivity() {
         dialog.setOnShowListener {
             dialog.listView.setOnItemClickListener { _, _, position, _ ->
                 val selected = options[position]
-                if (selected != ThemeColorStore.current(this)) {
-                    ThemeColorStore.select(this, selected)
-                    dialog.dismiss()
-                    recreate()
-                } else {
-                    dialog.dismiss()
-                }
+                dialog.dismiss()
+                viewModel.onThemeSelected(selected)
             }
         }
         dialog.show()

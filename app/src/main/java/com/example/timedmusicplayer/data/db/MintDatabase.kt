@@ -40,6 +40,8 @@ interface TrackDao {
     @Query("DELETE FROM tracks WHERE folderUri = :folderUri AND scanGeneration != :generation") fun deleteNotSeen(folderUri: String, generation: Long)
     @Query("DELETE FROM tracks WHERE sourceType = 'CLOUD'") fun deleteCloudTracks()
     @Query("DELETE FROM tracks WHERE id IN (:ids)") fun deleteByIds(ids: List<String>): Int
+    @Query("DELETE FROM tracks") fun deleteAll(): Int
+    @Query("DELETE FROM tracks WHERE sourceType = :source") fun deleteBySource(source: String): Int
 }
 
 @Dao

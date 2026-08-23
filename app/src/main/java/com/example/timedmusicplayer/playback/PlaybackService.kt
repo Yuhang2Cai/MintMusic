@@ -194,7 +194,7 @@ class PlaybackService : MediaSessionService() {
                 val currentMediaId = player.currentMediaItem?.mediaId
                 scope.launch(Dispatchers.IO) {
                     repository.saveQueue(ids)
-                    currentMediaId?.let(repository::markPlayed)
+                    currentMediaId?.let { repository.markPlayed(it) }
                 }
             }
         }

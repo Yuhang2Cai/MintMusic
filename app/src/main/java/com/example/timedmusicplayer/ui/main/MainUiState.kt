@@ -3,6 +3,7 @@
 import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.model.TrackFilter
 import com.example.timedmusicplayer.emotion.MoodAnalysisState
+import com.example.timedmusicplayer.ui.theme.ThemeColorOption
 
 data class MainUiState(
     val activeFilter: TrackFilter = TrackFilter.ALL,
@@ -11,7 +12,8 @@ data class MainUiState(
     val isScanningLocalMusic: Boolean = false,
     val miniPlayer: MiniPlayerUiState? = null,
     val selectedTrackIds: Set<String> = emptySet(),
-    val moodStates: Map<String, MoodAnalysisState> = emptyMap()
+    val moodStates: Map<String, MoodAnalysisState> = emptyMap(),
+    val selectedTheme: ThemeColorOption = ThemeColorOption.MINT
 )
 
 data class MiniPlayerUiState(

@@ -26,14 +26,23 @@ data class PlayerUiState(
     val positionMs: Long = 0L,
     val lyricTrackId: String? = null,
     val lyrics: List<LyricLine> = emptyList(),
+    val isLyricsPageVisible: Boolean = false,
     val isLyricsLoading: Boolean = false,
     val moodLabel: String? = null,
-    val isMoodAnalyzing: Boolean = false
+    val isMoodAnalyzing: Boolean = false,
+    val showContentStatus: Boolean = false,
+    val isContentProcessing: Boolean = false,
+    val contentStatusText: String = ""
 )
 
 data class MoodResultUi(
     val trackTitle: String,
     val labels: List<String>,
-    val valence: Double,
-    val arousal: Double
+    val valenceText: String,
+    val arousalText: String
+)
+
+data class SleepTimerOptionUi(
+    val label: String,
+    val minutes: Int?
 )

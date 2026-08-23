@@ -7,7 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import com.example.timedmusicplayer.R
 import com.example.timedmusicplayer.data.MusicRepository
-import com.example.timedmusicplayer.emotion.MoodAnalysisStore
+import com.example.timedmusicplayer.emotion.MoodAnalysisRepository
 import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.model.TrackFilter
 import com.example.timedmusicplayer.model.SourceType
@@ -15,6 +15,8 @@ import com.example.timedmusicplayer.playback.PlaybackController
 import com.example.timedmusicplayer.playback.PlaybackController.PlaybackTickMode
 import com.example.timedmusicplayer.playback.PlaybackSnapshot
 import com.example.timedmusicplayer.ui.common.PlaybackUiFormatter
+import com.example.timedmusicplayer.ui.theme.AppearanceRepository
+import com.example.timedmusicplayer.ui.theme.ThemeColorOption
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -33,7 +35,8 @@ class MainViewModel(
     application: Application,
     private val repository: MusicRepository,
     private val playbackController: PlaybackController,
-    private val moodAnalysisStore: MoodAnalysisStore
+    private val moodRepository: MoodAnalysisRepository,
+    private val appearanceRepository: AppearanceRepository
 ) : AndroidViewModel(application) {
 
     private val app = application.applicationContext
@@ -55,11 +58,17 @@ class MainViewModel(
         .cachedIn(viewModelScope)
 
     init {
-        val restoredFilter = runCatching {
-            TrackFilter.valueOf(repository.getSelectedFilter(TrackFilter.ALL.name))
-        }.getOrDefault(TrackFilter.ALL)
-        filterValue.value = restoredFilter
-        uiStateValue.value = uiStateValue.value.copy(activeFilter = restoredFilter)
+        viewModelScope.launch {
+            val restoredFilter = runCatching {
+                TrackFilter.valueOf(repository.getSelectedFilter(TrackFilter.ALL.name))
+            }.getOrDefault(TrackFilter.ALL)
+            filterValue.value = restoredFilter
+            uiStateValue.value = uiStateValue.value.copy(
+                activeFilter = restoredFilter,
+                selectedTheme = appearanceRepository.selectedTheme()
+            )
+            loadLibrary(forceRefresh = false)
+        }
         viewModelScope.launch {
             playbackController.snapshot.collect { snapshot ->
                 uiStateValue.value = uiStateValue.value.copy(
@@ -68,11 +77,10 @@ class MainViewModel(
             }
         }
         viewModelScope.launch {
-            moodAnalysisStore.states.collect { states ->
+            moodRepository.states.collect { states ->
                 uiStateValue.value = uiStateValue.value.copy(moodStates = states)
             }
         }
-        loadLibrary(forceRefresh = false)
     }
 
     fun onStart() {
@@ -94,7 +102,7 @@ class MainViewModel(
         }
         uiStateValue.value = uiStateValue.value.copy(activeFilter = filter)
         filterValue.value = filter
-        repository.saveSelectedFilter(filter.name)
+        viewModelScope.launch { repository.saveSelectedFilter(filter.name) }
         clearSelection()
         loadLibrary(forceRefresh = false)
     }
@@ -109,8 +117,10 @@ class MainViewModel(
         if (uri == null) {
             return
         }
-        repository.saveLocalFolder(uri)
-        loadLibrary(forceRefresh = true)
+        viewModelScope.launch {
+            repository.saveLocalFolder(uri)
+            loadLibrary(forceRefresh = true)
+        }
     }
 
     fun onManageCloudClicked() {
@@ -175,14 +185,15 @@ class MainViewModel(
             eventChannel.send(
                 MainEvent.ShowMoodLabelPicker(
                     trackId = track.id,
-                    currentLabel = moodAnalysisStore.states.value[track.id]?.label
+                    currentLabel = moodRepository.states.value[track.id]?.label,
+                    labels = moodRepository.labels
                 )
             )
         }
     }
 
     fun onMoodLabelSelected(trackId: String, label: String?) {
-        moodAnalysisStore.setLabel(trackId, label)
+        moodRepository.setLabel(trackId, label)
     }
 
     fun clearSelection() {
@@ -195,8 +206,12 @@ class MainViewModel(
         requestDeleteConfirmation(selectedTracks.values.toList())
     }
 
-    fun onDeleteAllClicked(visibleTracks: List<Track>) {
-        requestDeleteConfirmation(visibleTracks)
+    fun onDeleteAllClicked() {
+        viewModelScope.launch {
+            val filter = uiStateValue.value.activeFilter
+            val count = repository.trackCount(filter)
+            if (count > 0) eventChannel.send(MainEvent.ConfirmDeleteAll(count, filter))
+        }
     }
 
     private fun requestDeleteConfirmation(tracks: List<Track>) {
@@ -237,6 +252,29 @@ class MainViewModel(
                 app.getString(R.string.delete_tracks_partial, result.deleted, result.failed)
             }
             eventChannel.send(MainEvent.TracksDeleted(message))
+        }
+    }
+
+    fun onDeleteAllConfirmed(filter: TrackFilter) {
+        viewModelScope.launch {
+            val result = repository.deleteAllTracks(filter)
+            clearSelection()
+            loadLibrary(forceRefresh = false)
+            val message = if (result.failed == 0) {
+                app.getString(R.string.delete_tracks_success, result.deleted)
+            } else {
+                app.getString(R.string.delete_tracks_partial, result.deleted, result.failed)
+            }
+            eventChannel.send(MainEvent.TracksDeleted(message))
+        }
+    }
+
+    fun onThemeSelected(option: ThemeColorOption) {
+        if (option == uiStateValue.value.selectedTheme) return
+        viewModelScope.launch {
+            appearanceRepository.selectTheme(option)
+            uiStateValue.value = uiStateValue.value.copy(selectedTheme = option)
+            eventChannel.send(MainEvent.RecreateForTheme)
         }
     }
 
@@ -331,8 +369,14 @@ sealed class MainEvent {
     data class ShowMessage(val message: String) : MainEvent()
     data class TracksDeleted(val message: String) : MainEvent()
     data class OpenFolderPicker(val initialUri: Uri?) : MainEvent()
-    data class ShowMoodLabelPicker(val trackId: String, val currentLabel: String?) : MainEvent()
+    data class ShowMoodLabelPicker(
+        val trackId: String,
+        val currentLabel: String?,
+        val labels: List<String>
+    ) : MainEvent()
     data class ConfirmTrackDeletion(val tracks: List<Track>) : MainEvent()
+    data class ConfirmDeleteAll(val count: Int, val filter: TrackFilter) : MainEvent()
     object OpenPlayerScreen : MainEvent()
     object OpenCloudSourceScreen : MainEvent()
+    object RecreateForTheme : MainEvent()
 }

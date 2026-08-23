@@ -29,36 +29,43 @@ class CloudSourceViewModel(
 
     val uiState: StateFlow<CloudSourceUiState> = uiStateValue.asStateFlow()
     val events = eventChannel.receiveAsFlow()
-    val defaultSourceUrl: String = DEFAULT_STREAM_URL
-
     init {
         loadSources()
-    }
-
-    fun suggestName(url: String): String {
-        return deriveName(url)
     }
 
     fun refresh() {
         loadSources()
     }
 
-    fun onAddSource(inputName: String, url: String, coverUrl: String = "") {
-        val safeUrl = url.trim()
-        val safeInputName = inputName.trim()
-        val safeCoverUrl = coverUrl.trim()
+    fun onNameChanged(value: String) {
+        if (uiStateValue.value.inputName != value) uiStateValue.value = uiStateValue.value.copy(inputName = value)
+    }
 
-        when {
-            safeUrl.isBlank() -> sendMessage(app.getString(R.string.no_stream_url))
-            !isValidUrl(safeUrl) -> sendMessage(app.getString(R.string.invalid_stream_url))
-            safeCoverUrl.isNotBlank() && !isValidUrl(safeCoverUrl) -> sendMessage(app.getString(R.string.invalid_stream_url))
-            repository.hasDuplicateCloudUrl(safeUrl) -> sendMessage(app.getString(R.string.duplicate_stream_url))
-            else -> {
-                val finalName = if (safeInputName.isBlank()) deriveName(safeUrl) else safeInputName
-                repository.addCloudSource(finalName, safeUrl, safeCoverUrl)
-                loadSources()
-                viewModelScope.launch {
-                    eventChannel.send(CloudSourceEvent.ClearNameInput)
+    fun onUrlChanged(value: String) {
+        if (uiStateValue.value.inputUrl != value) uiStateValue.value = uiStateValue.value.copy(inputUrl = value)
+    }
+
+    fun onCoverUrlChanged(value: String) {
+        if (uiStateValue.value.inputCoverUrl != value) uiStateValue.value = uiStateValue.value.copy(inputCoverUrl = value)
+    }
+
+    fun onAddSource() {
+        val form = uiStateValue.value
+        val safeUrl = form.inputUrl.trim()
+        val safeInputName = form.inputName.trim()
+        val safeCoverUrl = form.inputCoverUrl.trim()
+        viewModelScope.launch {
+            when {
+                safeUrl.isBlank() -> sendMessage(app.getString(R.string.no_stream_url))
+                !isValidUrl(safeUrl) -> sendMessage(app.getString(R.string.invalid_stream_url))
+                safeCoverUrl.isNotBlank() && !isValidUrl(safeCoverUrl) -> sendMessage(app.getString(R.string.invalid_stream_url))
+                repository.hasDuplicateCloudUrl(safeUrl) -> sendMessage(app.getString(R.string.duplicate_stream_url))
+                else -> {
+                    uiStateValue.value = uiStateValue.value.copy(isSaving = true)
+                    val finalName = if (safeInputName.isBlank()) deriveName(safeUrl) else safeInputName
+                    repository.addCloudSource(finalName, safeUrl, safeCoverUrl)
+                    uiStateValue.value = uiStateValue.value.copy(inputName = "", isSaving = false)
+                    loadSourcesNow()
                 }
             }
         }
@@ -71,13 +78,17 @@ class CloudSourceViewModel(
             return
         }
 
-        repository.renameCloudSource(sourceId, safeName)
-        loadSources()
+        viewModelScope.launch {
+            repository.renameCloudSource(sourceId, safeName)
+            loadSourcesNow()
+        }
     }
 
     fun onDeleteSource(sourceId: String) {
-        repository.deleteCloudSource(sourceId)
-        loadSources()
+        viewModelScope.launch {
+            repository.deleteCloudSource(sourceId)
+            loadSourcesNow()
+        }
     }
 
     fun onSourceSelected(source: CloudSource) {
@@ -85,19 +96,13 @@ class CloudSourceViewModel(
             sendMessage(app.getString(R.string.invalid_stream_url))
             return
         }
-        val cloudTracks = repository.getTracks(TrackFilter.CLOUD)
-        if (cloudTracks.isEmpty()) {
-            return
+        viewModelScope.launch {
+            val cloudTracks = repository.getTracks(TrackFilter.CLOUD)
+            val targetIndex = cloudTracks.indexOfFirst { it.id == "cloud:${source.id}" }
+            if (targetIndex == -1) return@launch
+            playbackController.playQueue(cloudTracks, targetIndex, forcePlay = true)
+            eventChannel.send(CloudSourceEvent.OpenPlayerScreen)
         }
-
-        val targetTrackId = "cloud:${source.id}"
-        val targetIndex = cloudTracks.indexOfFirst { it.id == targetTrackId }
-        if (targetIndex == -1) {
-            return
-        }
-
-        playbackController.playQueue(cloudTracks, targetIndex, forcePlay = true)
-        viewModelScope.launch { eventChannel.send(CloudSourceEvent.OpenPlayerScreen) }
     }
 
     fun getSourceById(sourceId: String): CloudSource? {
@@ -105,8 +110,12 @@ class CloudSourceViewModel(
     }
 
     private fun loadSources() {
+        viewModelScope.launch { loadSourcesNow() }
+    }
+
+    private suspend fun loadSourcesNow() {
         val entries = repository.getCloudSources()
-        uiStateValue.value = CloudSourceUiState(
+        uiStateValue.value = uiStateValue.value.copy(
             entries = entries,
             isEmpty = entries.isEmpty()
         )
@@ -132,13 +141,11 @@ class CloudSourceViewModel(
     }
 
     companion object {
-        private const val DEFAULT_STREAM_URL = "http://ice1.somafm.com/groovesalad-128-mp3"
     }
 }
 
 sealed class CloudSourceEvent {
     data class ShowMessage(val message: String) : CloudSourceEvent()
     object OpenPlayerScreen : CloudSourceEvent()
-    object ClearNameInput : CloudSourceEvent()
 }
 

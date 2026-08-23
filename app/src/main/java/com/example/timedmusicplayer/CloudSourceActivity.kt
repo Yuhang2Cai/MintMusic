@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -49,15 +50,10 @@ class CloudSourceActivity : AppCompatActivity() {
 
         binding.rvCloudSources.layoutManager = LinearLayoutManager(this)
         binding.rvCloudSources.adapter = adapter
-        binding.etSourceUrl.setText(viewModel.defaultSourceUrl)
-        binding.etSourceName.setText(viewModel.suggestName(viewModel.defaultSourceUrl))
-        binding.btnAddSource.setOnClickListener {
-            viewModel.onAddSource(
-                inputName = binding.etSourceName.text?.toString().orEmpty(),
-                url = binding.etSourceUrl.text?.toString().orEmpty(),
-                coverUrl = binding.etCoverUrl.text?.toString().orEmpty()
-            )
-        }
+        binding.etSourceName.doAfterTextChanged { viewModel.onNameChanged(it?.toString().orEmpty()) }
+        binding.etSourceUrl.doAfterTextChanged { viewModel.onUrlChanged(it?.toString().orEmpty()) }
+        binding.etCoverUrl.doAfterTextChanged { viewModel.onCoverUrlChanged(it?.toString().orEmpty()) }
+        binding.btnAddSource.setOnClickListener { viewModel.onAddSource() }
 
         observeViewModel()
     }
@@ -92,6 +88,10 @@ class CloudSourceActivity : AppCompatActivity() {
     private fun render(state: CloudSourceUiState) {
         adapter.submitSources(state.entries)
         binding.tvEmpty.visibility = if (state.isEmpty) View.VISIBLE else View.GONE
+        if (binding.etSourceName.text?.toString() != state.inputName) binding.etSourceName.setText(state.inputName)
+        if (binding.etSourceUrl.text?.toString() != state.inputUrl) binding.etSourceUrl.setText(state.inputUrl)
+        if (binding.etCoverUrl.text?.toString() != state.inputCoverUrl) binding.etCoverUrl.setText(state.inputCoverUrl)
+        binding.btnAddSource.isEnabled = !state.isSaving
     }
 
     private fun handleEvent(event: CloudSourceEvent) {
@@ -104,9 +104,6 @@ class CloudSourceActivity : AppCompatActivity() {
                 startActivity(Intent(this, PlayerActivity::class.java))
             }
 
-            CloudSourceEvent.ClearNameInput -> {
-                binding.etSourceName.text?.clear()
-            }
         }
     }
 

@@ -5,11 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.work.WorkManager
 import com.example.timedmusicplayer.data.MusicRepository
-import com.example.timedmusicplayer.emotion.MoodAnalysisStore
+import com.example.timedmusicplayer.emotion.MoodAnalysisRepository
+import com.example.timedmusicplayer.lyrics.LyricsRepository
 import com.example.timedmusicplayer.playback.PlaybackController
 import com.example.timedmusicplayer.ui.cloud.CloudSourceViewModel
 import com.example.timedmusicplayer.ui.main.MainViewModel
 import com.example.timedmusicplayer.ui.player.PlayerViewModel
+import com.example.timedmusicplayer.ui.theme.AppearanceRepository
 
 class AppViewModelFactory(
     private val application: Application
@@ -17,18 +19,20 @@ class AppViewModelFactory(
 
     private val repository by lazy { MusicRepository.getInstance(application) }
     private val playbackController by lazy { PlaybackController.getInstance(application) }
-    private val moodAnalysisStore by lazy { MoodAnalysisStore(application) }
     private val workManager by lazy { WorkManager.getInstance(application) }
+    private val moodRepository by lazy { MoodAnalysisRepository(application, workManager) }
+    private val lyricsRepository by lazy { LyricsRepository(application, workManager) }
+    private val appearanceRepository by lazy { AppearanceRepository(application) }
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
         return when {
             modelClass.isAssignableFrom(MainViewModel::class.java) -> {
-                MainViewModel(application, repository, playbackController, moodAnalysisStore) as T
+                MainViewModel(application, repository, playbackController, moodRepository, appearanceRepository) as T
             }
 
             modelClass.isAssignableFrom(PlayerViewModel::class.java) -> {
-                PlayerViewModel(application, playbackController, moodAnalysisStore, workManager) as T
+                PlayerViewModel(application, playbackController, moodRepository, lyricsRepository) as T
             }
 
             modelClass.isAssignableFrom(CloudSourceViewModel::class.java) -> {

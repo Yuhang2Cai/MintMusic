@@ -4,16 +4,11 @@ import android.app.Application
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.Data
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import com.example.timedmusicplayer.R
-import com.example.timedmusicplayer.emotion.AnalyzeMoodWorker
-import com.example.timedmusicplayer.emotion.MoodAnalysisStore
-import com.example.timedmusicplayer.lyrics.GenerateLyricsWorker
-import com.example.timedmusicplayer.lyrics.LyricFiles
+import com.example.timedmusicplayer.emotion.MoodAnalysisRepository
+import com.example.timedmusicplayer.emotion.MoodTaskResult
+import com.example.timedmusicplayer.lyrics.LyricsGenerationResult
+import com.example.timedmusicplayer.lyrics.LyricsRepository
 import com.example.timedmusicplayer.lyrics.LyricLine
 import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.playback.PlaybackController
@@ -26,21 +21,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import java.util.Locale
 import kotlin.math.abs
 
 class PlayerViewModel(
     application: Application,
     private val playbackController: PlaybackController,
-    private val moodAnalysisStore: MoodAnalysisStore,
-    private val workManager: WorkManager
+    private val moodRepository: MoodAnalysisRepository,
+    private val lyricsRepository: LyricsRepository
 ) : AndroidViewModel(application) {
 
     private val app = application.applicationContext
@@ -55,6 +46,7 @@ class PlayerViewModel(
     )
 
     private val uiStateValue = MutableStateFlow(emptyState)
+    private val seekPreviewTextValue = MutableStateFlow<String?>(null)
     private val eventChannel = Channel<PlayerEvent>(Channel.BUFFERED)
     private var isUserSeeking = false
     private var previewSeekPositionMs: Long = 0L
@@ -64,8 +56,10 @@ class PlayerViewModel(
     private var lyricTrackId: String? = null
     private var lyrics: List<LyricLine> = emptyList()
     private var isLyricsLoading = false
+    private var isLyricsPageVisible = false
 
     val uiState: StateFlow<PlayerUiState> = uiStateValue.asStateFlow()
+    val seekPreviewText: StateFlow<String?> = seekPreviewTextValue.asStateFlow()
     val events = eventChannel.receiveAsFlow()
 
     init {
@@ -78,7 +72,7 @@ class PlayerViewModel(
             }
         }
         viewModelScope.launch {
-            moodAnalysisStore.states.collect {
+            moodRepository.states.collect {
                 uiStateValue.value = withContentState(uiStateValue.value)
             }
         }
@@ -108,12 +102,26 @@ class PlayerViewModel(
         playbackController.cyclePlaybackMode()
     }
 
-    fun onSleepTimerSelected(minutes: Int) {
-        playbackController.setSleepTimer(minutes.coerceAtLeast(0) * 60_000L)
+    fun onSleepTimerClicked() {
+        val options = TIMER_MINUTES.map { minutes ->
+            SleepTimerOptionUi(app.getString(R.string.sleep_timer_minutes, minutes), minutes)
+        }.toMutableList()
+        if (uiStateValue.value.sleepTimerRemainingMs > 0L) {
+            options += SleepTimerOptionUi(app.getString(R.string.sleep_timer_cancel), null)
+        }
+        viewModelScope.launch { eventChannel.send(PlayerEvent.ShowSleepTimerOptions(options)) }
     }
 
-    fun onSleepTimerCancelled() {
-        playbackController.setSleepTimer(0L)
+    fun onSleepTimerOptionSelected(option: SleepTimerOptionUi) {
+        playbackController.setSleepTimer((option.minutes ?: 0).coerceAtLeast(0) * 60_000L)
+    }
+
+    fun onLyricsPageSelected(selected: Boolean) {
+        val canShowLyrics = lyrics.isNotEmpty() && lyricTrackId == uiStateValue.value.currentTrack?.id
+        val next = selected && canShowLyrics
+        if (isLyricsPageVisible == next) return
+        isLyricsPageVisible = next
+        publishContentState()
     }
 
     fun onGenerateLyricsClicked() {
@@ -134,46 +142,26 @@ class PlayerViewModel(
             isLyricsLoading = true
             lyricTrackId = track.id
             publishContentState()
-            val request = OneTimeWorkRequestBuilder<GenerateLyricsWorker>()
-                .setInputData(
-                    Data.Builder()
-                        .putString(GenerateLyricsWorker.KEY_TRACK_ID, track.id)
-                        .putString(GenerateLyricsWorker.KEY_TITLE, track.title)
-                        .putString(GenerateLyricsWorker.KEY_ARTIST, track.artist)
-                        .putString(GenerateLyricsWorker.KEY_ALBUM, track.album)
-                        .putLong(GenerateLyricsWorker.KEY_DURATION_SECONDS, track.durationMs / 1_000L)
-                        .build()
-                )
-                .addTag("lyrics:${track.id}")
-                .build()
-            workManager.enqueueUniqueWork("lyrics:${track.id}", ExistingWorkPolicy.REPLACE, request)
             eventChannel.send(PlayerEvent.ShowMessage(app.getString(R.string.lyrics_started)))
-            val info = workManager.getWorkInfoByIdFlow(request.id)
-                .filterNotNull()
-                .filter { it.state.isFinished }
-                .first()
+            val result = lyricsRepository.generate(track)
             if (lyricTrackId == track.id) isLyricsLoading = false
-            when (info.state) {
-                WorkInfo.State.SUCCEEDED -> {
+            when (result) {
+                is LyricsGenerationResult.Success -> {
                     if (lyricTrackId == track.id) {
-                        lyrics = withContext(Dispatchers.IO) { LyricFiles.read(app, track.id) }
+                        lyrics = result.lyrics
                         publishContentState()
                     }
                     eventChannel.send(PlayerEvent.ShowMessage(app.getString(R.string.lyrics_completed), long = true))
                 }
-                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> {
+                is LyricsGenerationResult.Failure -> {
                     publishContentState()
                     eventChannel.send(
                         PlayerEvent.ShowMessage(
-                            app.getString(
-                                R.string.lyrics_failed,
-                                info.outputData.getString(GenerateLyricsWorker.KEY_ERROR).orEmpty()
-                            ),
+                            app.getString(R.string.lyrics_failed, result.message),
                             long = true
                         )
                     )
                 }
-                else -> Unit
             }
         }
     }
@@ -193,45 +181,24 @@ class PlayerViewModel(
         val track = uiStateValue.value.currentTrack ?: return
         if (track.isStream || uiStateValue.value.isMoodAnalyzing) return
         viewModelScope.launch {
-            moodAnalysisStore.markAnalyzing(track.id)
-            val request = OneTimeWorkRequestBuilder<AnalyzeMoodWorker>()
-                .setInputData(
-                    Data.Builder()
-                        .putString(AnalyzeMoodWorker.KEY_URI, track.uri)
-                        .putString(AnalyzeMoodWorker.KEY_TRACK_ID, track.id)
-                        .putString(AnalyzeMoodWorker.KEY_TITLE, track.title)
-                        .putString(AnalyzeMoodWorker.KEY_MIME_TYPE, track.mimeType)
-                        .build()
-                )
-                .addTag("music-emotion:${track.id}")
-                .build()
-            workManager.enqueueUniqueWork("music-emotion:${track.id}", ExistingWorkPolicy.REPLACE, request)
             eventChannel.send(PlayerEvent.ShowMessage(app.getString(R.string.music_mood_started)))
-            val info = workManager.getWorkInfoByIdFlow(request.id)
-                .filterNotNull()
-                .filter { it.state.isFinished }
-                .first()
-            when (info.state) {
-                WorkInfo.State.SUCCEEDED -> eventChannel.send(
+            when (val result = moodRepository.analyze(track)) {
+                is MoodTaskResult.Success -> eventChannel.send(
                     PlayerEvent.ShowMoodResult(
                         MoodResultUi(
                             trackTitle = track.title,
-                            labels = translateMoodLabels(info.outputData.getString(AnalyzeMoodWorker.KEY_MOODS).orEmpty()),
-                            valence = info.outputData.getDouble(AnalyzeMoodWorker.KEY_VALENCE, Double.NaN),
-                            arousal = info.outputData.getDouble(AnalyzeMoodWorker.KEY_AROUSAL, Double.NaN)
+                            labels = translateMoodLabels(result.moods).ifEmpty { listOf(app.getString(R.string.music_mood_no_label)) },
+                            valenceText = formatMoodScore(result.valence),
+                            arousalText = formatMoodScore(result.arousal)
                         )
                     )
                 )
-                WorkInfo.State.FAILED, WorkInfo.State.CANCELLED -> eventChannel.send(
+                is MoodTaskResult.Failure -> eventChannel.send(
                     PlayerEvent.ShowMessage(
-                        app.getString(
-                            R.string.music_mood_failed,
-                            info.outputData.getString(AnalyzeMoodWorker.KEY_ERROR).orEmpty()
-                        ),
+                        app.getString(R.string.music_mood_failed, result.message),
                         long = true
                     )
                 )
-                else -> Unit
             }
         }
     }
@@ -243,19 +210,19 @@ class PlayerViewModel(
         previewSeekPositionMs = uiStateValue.value.seekProgress.toLong()
     }
 
-    fun onSeekPreview(progress: Int): String {
-        if (!uiStateValue.value.canSeek) return uiStateValue.value.currentTimeText
+    fun onSeekPreview(progress: Int) {
+        if (!uiStateValue.value.canSeek) return
         isUserSeeking = true
         previewSeekPositionMs = progress.toLong().coerceAtLeast(0L)
-        // The Activity updates the label directly while the finger is moving. Avoid emitting
-        // a complete screen state for every pixel, which previously caused visible jank.
-        return PlaybackUiFormatter.formatTime(previewSeekPositionMs)
+        // Keep high-frequency drag feedback separate from the complete screen state.
+        seekPreviewTextValue.value = PlaybackUiFormatter.formatTime(previewSeekPositionMs)
     }
 
     fun onSeekCompleted(progress: Int) {
         if (!uiStateValue.value.canSeek) return
         val targetPositionMs = progress.toLong().coerceAtLeast(0L)
         isUserSeeking = false
+        seekPreviewTextValue.value = null
         previewSeekPositionMs = targetPositionMs
         pendingSeekPositionMs = targetPositionMs
         pendingSeekTrackId = uiStateValue.value.currentTrack?.id
@@ -368,9 +335,10 @@ class PlayerViewModel(
         lyricTrackId = track?.id
         lyrics = emptyList()
         isLyricsLoading = false
+        isLyricsPageVisible = false
         if (track == null) return
         viewModelScope.launch {
-            val loaded = withContext(Dispatchers.IO) { LyricFiles.read(app, track.id) }
+            val loaded = lyricsRepository.load(track.id)
             if (lyricTrackId == track.id) {
                 lyrics = loaded
                 publishContentState()
@@ -386,14 +354,32 @@ class PlayerViewModel(
     }
 
     private fun withContentState(state: PlayerUiState): PlayerUiState {
-        val mood = state.currentTrack?.id?.let(moodAnalysisStore.states.value::get)
+        val mood = state.currentTrack?.id?.let(moodRepository.states.value::get)
+        val lyricsLoading = isLyricsLoading && lyricTrackId == state.currentTrack?.id
+        val moodAnalyzing = mood?.isAnalyzing == true
+        val isProcessing = lyricsLoading || moodAnalyzing
+        val statusText = when {
+            lyricsLoading -> app.getString(R.string.lyrics_matching)
+            moodAnalyzing -> app.getString(R.string.music_mood_analyzing)
+            else -> mood?.label.orEmpty()
+        }
         return state.copy(
             lyricTrackId = lyricTrackId,
             lyrics = lyrics,
-            isLyricsLoading = isLyricsLoading && lyricTrackId == state.currentTrack?.id,
+            isLyricsPageVisible = isLyricsPageVisible && lyrics.isNotEmpty(),
+            isLyricsLoading = lyricsLoading,
             moodLabel = mood?.label,
-            isMoodAnalyzing = mood?.isAnalyzing == true
+            isMoodAnalyzing = moodAnalyzing,
+            showContentStatus = isProcessing || !mood?.label.isNullOrBlank(),
+            isContentProcessing = isProcessing,
+            contentStatusText = statusText
         )
+    }
+
+    private fun formatMoodScore(value: Double): String = if (value.isNaN()) {
+        "—"
+    } else {
+        String.format(Locale.getDefault(), "%.2f", value)
     }
 
     private fun translateMoodLabels(raw: String): List<String> {
@@ -411,6 +397,7 @@ class PlayerViewModel(
     }
 
     private companion object {
+        val TIMER_MINUTES = intArrayOf(15, 30, 45, 60)
         const val SEEK_ACK_TOLERANCE_MS = 1_500L
         const val SEEK_ACK_TIMEOUT_MS = 2_500L
     }
@@ -419,6 +406,7 @@ class PlayerViewModel(
 sealed class PlayerEvent {
     data class ShowMessage(val message: String, val long: Boolean = false) : PlayerEvent()
     data class ShowMoodResult(val result: MoodResultUi) : PlayerEvent()
+    data class ShowSleepTimerOptions(val options: List<SleepTimerOptionUi>) : PlayerEvent()
     object ConfirmLyricsGeneration : PlayerEvent()
     object ConfirmMoodAnalysis : PlayerEvent()
 }

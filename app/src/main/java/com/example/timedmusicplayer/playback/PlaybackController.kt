@@ -61,13 +61,17 @@ class PlaybackController private constructor(context: Context) {
                 result.onSuccess {
                     controller = it
                     it.addListener(listener)
-                    applyPlaybackMode(it, PlaybackMode.fromRaw(repository.getPlaybackMode(PlaybackMode.ORDER.name)))
-                    pendingQueue?.let { request ->
-                        playQueue(request.tracks, request.startIndex, request.forcePlay, request.startPositionMs)
+                    scope.launch {
+                        val restoredMode = repository.getPlaybackMode(PlaybackMode.ORDER.name)
+                        if (controller !== it) return@launch
+                        applyPlaybackMode(it, PlaybackMode.fromRaw(restoredMode))
+                        pendingQueue?.let { request ->
+                            playQueue(request.tracks, request.startIndex, request.forcePlay, request.startPositionMs)
+                        }
+                        pendingQueue = null
+                        emitSnapshot(refreshQueue = true)
+                        updateTicker()
                     }
-                    pendingQueue = null
-                    emitSnapshot(refreshQueue = true)
-                    updateTicker()
                 }
             }, ContextCompat.getMainExecutor(appContext))
         }
