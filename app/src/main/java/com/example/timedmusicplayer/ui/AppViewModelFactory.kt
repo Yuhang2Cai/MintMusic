@@ -28,7 +28,7 @@ class AppViewModelFactory(
             }
 
             modelClass.isAssignableFrom(CloudSourceViewModel::class.java) -> {
-                CloudSourceViewModel(application, repository) as T
+                CloudSourceViewModel(application, repository, playbackController) as T
             }
 
             else -> error("Unknown ViewModel class: ${modelClass.name}")

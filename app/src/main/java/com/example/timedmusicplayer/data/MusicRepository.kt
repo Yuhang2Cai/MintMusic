@@ -2,6 +2,7 @@ package com.example.timedmusicplayer.data
 
 import android.content.Context
 import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import com.example.timedmusicplayer.data.db.*
 import com.example.timedmusicplayer.data.index.LocalTrackIndexStore
 import com.example.timedmusicplayer.data.scanner.LibraryScanner
@@ -18,6 +19,12 @@ import androidx.paging.map
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
+
+data class DeleteTracksResult(
+    val requested: Int,
+    val deleted: Int,
+    val failed: Int
+)
 
 /** Room-backed source of truth for library, cloud sources, queue and playback history. */
 class MusicRepository private constructor(context: Context) {
@@ -103,6 +110,38 @@ class MusicRepository private constructor(context: Context) {
     fun getRecentTrackIds(): List<String> = blockingIo { ensureMigratedInternal(); database.playback().recentIds(50) }
     fun saveQueue(trackIds: List<String>) = blockingIo { ensureMigratedInternal(); database.playback().replaceQueue(trackIds) }
 
+    fun deleteTracks(tracks: List<Track>): DeleteTracksResult = blockingIo {
+        ensureMigratedInternal()
+        val distinctTracks = tracks.distinctBy(Track::id)
+        val deletedLocalIds = distinctTracks.asSequence()
+            .filter { it.sourceType == SourceType.LOCAL }
+            .filter { track ->
+                runCatching {
+                    val file = DocumentFile.fromSingleUri(appContext, Uri.parse(track.uri))
+                    file != null && file.delete()
+                }.getOrDefault(false)
+            }
+            .map(Track::id)
+            .toList()
+
+        deletedLocalIds.chunked(500).forEach(database.tracks()::deleteByIds)
+
+        val cloudSourceIds = distinctTracks.asSequence()
+            .filter { it.sourceType == SourceType.CLOUD }
+            .mapNotNull { it.id.removePrefix("cloud:").takeIf(String::isNotBlank) }
+            .distinct()
+            .toList()
+        val deletedCloudCount = cloudSourceIds.count { database.cloudSources().deleteById(it) > 0 }
+        if (deletedCloudCount > 0) syncCloudTracks()
+
+        val deleted = deletedLocalIds.size + deletedCloudCount
+        DeleteTracksResult(
+            requested = distinctTracks.size,
+            deleted = deleted,
+            failed = (distinctTracks.size - deleted).coerceAtLeast(0)
+        )
+    }
+
     private fun ensureMigrated() = blockingIo { ensureMigratedInternal() }
     private fun ensureMigratedInternal() {
         if (migrationReady) return
@@ -128,10 +167,13 @@ class MusicRepository private constructor(context: Context) {
     }
 
     private fun syncCloudTracks() {
-        database.tracks().deleteCloudTracks()
-        database.tracks().upsertAll(database.cloudSources().getAll().map {
+        val cloudTracks = database.cloudSources().getAll().map {
             Track("cloud:${it.id}", it.name, "在线音源", 0L, SourceType.CLOUD, it.url, coverUrl = it.coverUrl).toEntity()
-        })
+        }
+        database.runInTransaction {
+            database.tracks().deleteCloudTracks()
+            database.tracks().upsertAll(cloudTracks)
+        }
     }
     private fun <T> blockingIo(block: () -> T): T = runBlocking(Dispatchers.IO) { block() }
 

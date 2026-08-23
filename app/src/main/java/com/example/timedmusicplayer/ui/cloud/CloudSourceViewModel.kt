@@ -2,24 +2,25 @@
 
 import android.app.Application
 import android.net.Uri
-import android.util.Patterns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.timedmusicplayer.R
 import com.example.timedmusicplayer.data.MusicRepository
 import com.example.timedmusicplayer.model.CloudSource
-import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.playback.PlaybackController
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class CloudSourceViewModel(
     application: Application,
-    private val repository: MusicRepository
+    private val repository: MusicRepository,
+    private val playbackController: PlaybackController
 ) : AndroidViewModel(application) {
 
     private val app = application.applicationContext
@@ -80,6 +81,10 @@ class CloudSourceViewModel(
     }
 
     fun onSourceSelected(source: CloudSource) {
+        if (!isValidUrl(source.url)) {
+            sendMessage(app.getString(R.string.invalid_stream_url))
+            return
+        }
         val cloudTracks = repository.getTracks(TrackFilter.CLOUD)
         if (cloudTracks.isEmpty()) {
             return
@@ -91,11 +96,8 @@ class CloudSourceViewModel(
             return
         }
 
-        viewModelScope.launch {
-            eventChannel.send(
-                CloudSourceEvent.OpenPlayer(ArrayList(cloudTracks), targetIndex)
-            )
-        }
+        playbackController.playQueue(cloudTracks, targetIndex, forcePlay = true)
+        viewModelScope.launch { eventChannel.send(CloudSourceEvent.OpenPlayerScreen) }
     }
 
     fun getSourceById(sourceId: String): CloudSource? {
@@ -117,8 +119,7 @@ class CloudSourceViewModel(
     }
 
     private fun isValidUrl(url: String): Boolean {
-        return (url.startsWith("http://") || url.startsWith("https://")) &&
-            Patterns.WEB_URL.matcher(url).matches()
+        return url.toHttpUrlOrNull() != null
     }
 
     private fun deriveName(url: String): String {
@@ -137,7 +138,7 @@ class CloudSourceViewModel(
 
 sealed class CloudSourceEvent {
     data class ShowMessage(val message: String) : CloudSourceEvent()
-    data class OpenPlayer(val queue: ArrayList<Track>, val startIndex: Int) : CloudSourceEvent()
+    object OpenPlayerScreen : CloudSourceEvent()
     object ClearNameInput : CloudSourceEvent()
 }
 

@@ -1,6 +1,9 @@
 package com.example.timedmusicplayer.playback
 
+import androidx.media3.common.PlaybackException
+import com.example.timedmusicplayer.network.PlaybackErrorClassifier
 import com.example.timedmusicplayer.network.RecoveryPolicy
+import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
@@ -33,5 +36,14 @@ class PlaybackStateMachineTest {
         assertTrue(policy.shouldWrite("a", 5_000L, false))
         assertTrue(policy.shouldWrite("a", 5_100L, true))
         assertTrue(policy.shouldWrite("b", 0L, false))
+    }
+
+    @Test fun `malformed media urls are permanent errors`() {
+        assertFalse(
+            PlaybackErrorClassifier.isRetryable(
+                PlaybackException.ERROR_CODE_IO_UNSPECIFIED,
+                IOException("Malformed URL")
+            )
+        )
     }
 }

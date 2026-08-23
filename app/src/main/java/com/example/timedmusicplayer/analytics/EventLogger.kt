@@ -99,7 +99,7 @@ class EventLogger private constructor(context: Context) {
     private fun buildLine(level: String, name: String, params: Map<String, String>): String {
     // 属性： ts
     // 说明：运行期状态变量，承载 ts 相关上下文信息。
-        val ts = timeFormat.format(Date())
+        val ts = synchronized(timeFormat) { timeFormat.format(Date()) }
     // 属性： attrs
     // 说明：运行期状态变量，承载 attrs 相关上下文信息。
         val attrs = if (params.isEmpty()) {

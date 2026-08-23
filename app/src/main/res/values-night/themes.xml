@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.TimedMusicPlayer" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <style name="Theme.TimedMusicPlayer" parent="Theme.TimedMusicPlayer.Base">
         <item name="colorPrimary">@color/app_green_primary</item>
         <item name="colorPrimaryVariant">@color/app_green_primary_dark</item>
-        <item name="colorOnPrimary">@color/white</item>
         <item name="colorSecondary">@color/app_green_accent</item>
         <item name="colorSecondaryVariant">@color/app_green_primary</item>
-        <item name="colorOnSecondary">@color/white</item>
-        <item name="android:statusBarColor">@color/app_green_primary_dark</item>
-        <item name="android:windowBackground">@color/app_background</item>
-        <item name="android:forceDarkAllowed">false</item>
+        <item name="themeSoftColor">@color/app_green_soft</item>
     </style>
 </resources>

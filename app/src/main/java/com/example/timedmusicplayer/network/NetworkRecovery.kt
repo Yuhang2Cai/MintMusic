@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import androidx.media3.common.PlaybackException
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -28,14 +29,25 @@ class NetworkMonitor(context: Context, private val onChanged: (Boolean) -> Unit)
 }
 
 object PlaybackErrorClassifier {
-    fun isRetryable(error: PlaybackException): Boolean {
-        if (error.errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS) {
-            val message = error.cause?.message.orEmpty()
+    fun isRetryable(error: PlaybackException): Boolean = isRetryable(error.errorCode, error.cause)
+
+    internal fun isRetryable(errorCode: Int, cause: Throwable?): Boolean {
+        val causes = generateSequence(cause) { it.cause }.toList()
+        if (causes.any {
+                it is IllegalArgumentException ||
+                    it is SecurityException ||
+                    it is FileNotFoundException ||
+                    it.message.orEmpty().contains("Malformed URL", ignoreCase = true)
+            }) {
+            return false
+        }
+        if (errorCode == PlaybackException.ERROR_CODE_IO_BAD_HTTP_STATUS) {
+            val message = causes.joinToString(separator = " ") { it.message.orEmpty() }
             if (listOf("401", "403", "404").any(message::contains)) return false
             return true
         }
-        return error.cause is UnknownHostException || error.cause is SocketTimeoutException || error.cause is IOException ||
-            error.errorCode in PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED..PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
+        return causes.any { it is UnknownHostException || it is SocketTimeoutException || it is IOException } ||
+            errorCode in PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED..PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
     }
 }
 

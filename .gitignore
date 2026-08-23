@@ -5,4 +5,10 @@
 /macrobenchmark/build/
 /output/
 /tmp/
+/.venv/
+/.kotlin/
+/server/work/
+/server/reports/
+/server/vendor/
+**/__pycache__/
 /app/build/intermediates/javac/debug/classes/

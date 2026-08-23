@@ -3,13 +3,17 @@
     <string name="cloud_cover_url_hint">封面 URL（可选）</string>
     <string name="app_name">薄荷音乐</string>
 
-    <string name="select_music_folder">选择本地文件夹</string>
-    <string name="manage_cloud_sources">管理在线音源</string>
+    <string name="home_greeting">今天想听点什么？</string>
+    <string name="editorial_feature_title">午后松弛感</string>
+    <string name="editorial_feature_subtitle">给生活留一点空白</string>
+    <string name="select_music_folder">扫描本地</string>
+    <string name="manage_cloud_sources">在线音源</string>
     <string name="resume_last_playback">继续上次播放</string>
 
     <string name="filter_all">全部</string>
     <string name="filter_local">本地</string>
     <string name="filter_cloud">云端</string>
+    <string name="player_tracks_title">歌曲</string>
 
     <string name="library_count">共 %1$d 首</string>
     <string name="library_loading">正在加载音乐库...</string>
@@ -30,7 +34,7 @@
     <string name="edit_stream_name">编辑音源名称</string>
     <string name="stream_name_empty">请输入名称</string>
 
-    <string name="player">播放器</string>
+    <string name="player">正在播放</string>
     <string name="previous">上一首</string>
     <string name="next">下一首</string>
     <string name="play">播放</string>
@@ -40,9 +44,26 @@
     <string name="edit">编辑</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
+    <string name="selected_tracks_count">已选择 %1$d 首</string>
+    <string name="delete_tracks_title">删除歌曲</string>
+    <string name="delete_tracks_message">确定删除选中的 %1$d 首歌曲吗？本地歌曲文件也会被删除，此操作无法撤销。</string>
+    <string name="delete_tracks_success">已删除 %1$d 首歌曲</string>
+    <string name="delete_tracks_partial">已删除 %1$d 首，%2$d 首删除失败。请确认文件夹写入权限后重试。</string>
+    <string name="mini_player_cover">迷你播放器封面</string>
+    <string name="mini_player_drag_hint">拖动迷你播放器，轻触展开或收起</string>
+    <string name="open_player_details">打开播放详情</string>
+    <string name="expand_mini_player">展开迷你播放器</string>
+    <string name="collapse_mini_player">收起迷你播放器</string>
 
     <string name="playback_mode">播放模式</string>
     <string name="playback_mode_with_value">模式：%1$s</string>
+    <string name="sleep_timer">定时关闭</string>
+    <string name="sleep_timer_title">选择关闭时间</string>
+    <string name="sleep_timer_minutes">%1$d 分钟后</string>
+    <string name="sleep_timer_cancel">取消定时</string>
+    <string name="sleep_timer_remaining">剩余 %1$s</string>
+    <string name="audio_spectrum">随音乐变化的音频频谱</string>
+    <string name="audio_visualizer_permission_denied">未授予音频可视化权限，频谱动画不可用</string>
     <string name="mode_order">顺序播放</string>
     <string name="mode_repeat_one">单曲循环</string>
     <string name="mode_repeat_all">列表循环</string>
@@ -58,10 +79,46 @@
 
     <string name="buffered_percent">缓冲</string>
     <string name="buffered_percent_with_value">已缓冲：%1$d%%</string>
+    <string name="seek_unavailable">当前音源不支持跳转</string>
 
     <string name="no_resume_item">没有可播放内容</string>
     <string name="resume_item_missing">上次播放的内容已不存在</string>
 
     <string name="playback_channel_name">音频播放</string>
     <string name="playback_channel_desc">播放控制与后台状态</string>
+    <string name="notification_permission_needed">请允许通知权限，否则通知栏和锁屏无法完整显示播放进度与控制。</string>
+    <string name="theme_settings">主题设置</string>
+    <string name="choose_theme_color">选择主题颜色</string>
+    <string name="app_logo">薄荷音乐应用图标</string>
+    <string name="theme_mint">薄荷绿</string>
+    <string name="theme_blue">天空蓝</string>
+    <string name="theme_teal">青色</string>
+    <string name="theme_purple">紫色</string>
+    <string name="theme_indigo">靛蓝</string>
+    <string name="theme_pink">粉色</string>
+    <string name="theme_orange">橙色</string>
+    <string name="theme_red">红色</string>
+    <string name="generate_lyrics">智能获取歌词</string>
+    <string name="lyrics_lookup_title">匹配在线歌词</string>
+    <string name="lyrics_lookup_message">将从在线曲库匹配同步歌词。未找到时不会自动生成，以避免错误歌词。</string>
+    <string name="lyrics_local_only">当前仅支持为本地歌曲匹配歌词</string>
+    <string name="lyrics_started">正在匹配在线同步歌词</string>
+    <string name="lyrics_completed">歌词已准备好，向左滑动查看</string>
+    <string name="lyrics_failed">歌词获取失败：%1$s</string>
+    <string name="lyrics_swipe_hint">向左滑查看歌词</string>
+    <string name="lyrics_swipe_back">向右滑返回封面</string>
+    <string name="analyze_music_mood">分析歌曲情绪</string>
+    <string name="music_mood_title">分析歌曲情绪</string>
+    <string name="music_mood_message">将把本首本地歌曲上传至你的 Music2Emo 服务进行一次分析。分析完成后服务会删除临时音频，不会生成或修改歌词。</string>
+    <string name="music_mood_start">开始分析</string>
+    <string name="music_mood_started">正在分析歌曲情绪…</string>
+    <string name="music_mood_result">识别到的情绪\n%1$s\n\n愉悦度：%2$s\n能量：%3$s</string>
+    <string name="music_mood_no_label">未识别出明确情绪标签</string>
+    <string name="music_mood_failed">歌曲情绪分析失败：%1$s</string>
+    <string name="music_mood_local_only">当前仅支持分析本地歌曲</string>
+    <string name="music_mood_analyzing">分析歌曲情绪中</string>
+    <string name="lyrics_matching">匹配歌词中</string>
+    <string name="edit_mood_tag">修改情绪标签</string>
+    <string name="edit_mood_tag_title">修改情绪标签</string>
+    <string name="mood_tag_none">不显示标签</string>
 </resources>

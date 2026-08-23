@@ -14,8 +14,13 @@ data class PlayerUiState(
     val showBufferedInfo: Boolean = false,
     val isPlaying: Boolean = false,
     val canSkip: Boolean = false,
+    val canSeek: Boolean = false,
     val seekMax: Int = 0,
     val seekProgress: Int = 0,
     val bufferedProgress: Int = 0,
-    val currentTrack: Track? = null
+    val currentTrack: Track? = null,
+    val audioSessionId: Int = -1,
+    val sleepTimerText: String = "",
+    val sleepTimerRemainingMs: Long = 0L,
+    val positionMs: Long = 0L
 )

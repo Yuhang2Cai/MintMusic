@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_generate_lyrics"
+        android:title="@string/generate_lyrics"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_analyze_mood"
+        android:title="@string/analyze_music_mood"
+        app:showAsAction="never" />
+</menu>

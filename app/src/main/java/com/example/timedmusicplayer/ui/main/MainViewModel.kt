@@ -125,7 +125,13 @@ class MainViewModel(
                 return@launch
             }
 
-            eventChannel.send(MainEvent.OpenPlayer(ArrayList(allTracks), index))
+            playbackController.playQueue(
+                tracks = allTracks,
+                startIndex = index,
+                forcePlay = true,
+                startPositionMs = lastPlayback.positionMs
+            )
+            eventChannel.send(MainEvent.OpenPlayerScreen)
         }
     }
 
@@ -136,7 +142,22 @@ class MainViewModel(
             }
             val index = tracks.indexOfFirst { it.id == track.id }
             if (index == -1) return@launch
-            eventChannel.send(MainEvent.OpenPlayer(ArrayList(tracks), index))
+            playbackController.playQueue(tracks, index, forcePlay = true)
+            eventChannel.send(MainEvent.OpenPlayerScreen)
+        }
+    }
+
+    fun onDeleteTracksConfirmed(tracks: List<Track>) {
+        if (tracks.isEmpty()) return
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { repository.deleteTracks(tracks) }
+            loadLibrary(forceRefresh = false)
+            val message = if (result.failed == 0) {
+                app.getString(R.string.delete_tracks_success, result.deleted)
+            } else {
+                app.getString(R.string.delete_tracks_partial, result.deleted, result.failed)
+            }
+            eventChannel.send(MainEvent.TracksDeleted(message))
         }
     }
 
@@ -186,6 +207,7 @@ class MainViewModel(
 
     private fun PlaybackSnapshot.toMiniPlayerUiState(): MiniPlayerUiState {
         val current = currentTrack ?: return MiniPlayerUiState(
+            track = null,
             title = app.getString(R.string.no_resume_item),
             status = app.getString(R.string.ready_to_play),
             isPlaying = false,
@@ -205,6 +227,7 @@ class MainViewModel(
         val safeBuffered = buffered.coerceIn(safeProgress.toLong(), safeMax.toLong()).toInt()
 
         return MiniPlayerUiState(
+            track = current,
             title = current.title,
             status = PlaybackUiFormatter.statusText(app, state, errorMessage),
             isPlaying = isPlaying,
@@ -224,8 +247,8 @@ class MainViewModel(
 
 sealed class MainEvent {
     data class ShowMessage(val message: String) : MainEvent()
+    data class TracksDeleted(val message: String) : MainEvent()
     data class OpenFolderPicker(val initialUri: Uri?) : MainEvent()
-    data class OpenPlayer(val queue: ArrayList<Track>, val startIndex: Int) : MainEvent()
     object OpenPlayerScreen : MainEvent()
     object OpenCloudSourceScreen : MainEvent()
 }

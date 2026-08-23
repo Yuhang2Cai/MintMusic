@@ -1,5 +1,6 @@
 ﻿package com.example.timedmusicplayer.ui.main
 
+import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.model.TrackFilter
 
 data class MainUiState(
@@ -10,6 +11,7 @@ data class MainUiState(
 )
 
 data class MiniPlayerUiState(
+    val track: Track?,
     val title: String,
     val status: String,
     val isPlaying: Boolean,

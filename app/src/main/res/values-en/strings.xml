@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="cloud_cover_url_hint">Cover URL (optional)</string>
     <string name="app_name">Mint Music</string>
+    <string name="home_greeting">What do you feel like hearing?</string>
+    <string name="editorial_feature_title">Afternoon Ease</string>
+    <string name="editorial_feature_subtitle">Leave a little room for yourself</string>
 
     <string name="select_music_folder">Select local folder</string>
     <string name="manage_cloud_sources">Manage online sources</string>
@@ -9,6 +13,7 @@
     <string name="filter_all">All</string>
     <string name="filter_local">Local</string>
     <string name="filter_cloud">Cloud</string>
+    <string name="player_tracks_title">Tracks</string>
 
     <string name="library_count">%1$d tracks</string>
     <string name="library_loading">Loading library...</string>
@@ -39,9 +44,26 @@
     <string name="edit">Edit</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+    <string name="selected_tracks_count">%1$d selected</string>
+    <string name="delete_tracks_title">Delete tracks</string>
+    <string name="delete_tracks_message">Delete the %1$d selected tracks? Local audio files will also be deleted. This cannot be undone.</string>
+    <string name="delete_tracks_success">Deleted %1$d tracks</string>
+    <string name="delete_tracks_partial">Deleted %1$d tracks; %2$d failed. Check folder write access and try again.</string>
+    <string name="mini_player_cover">Mini player cover</string>
+    <string name="mini_player_drag_hint">Drag the mini player; tap to expand or collapse</string>
+    <string name="open_player_details">Open player details</string>
+    <string name="expand_mini_player">Expand mini player</string>
+    <string name="collapse_mini_player">Collapse mini player</string>
 
     <string name="playback_mode">Playback mode</string>
     <string name="playback_mode_with_value">Mode: %1$s</string>
+    <string name="sleep_timer">Sleep timer</string>
+    <string name="sleep_timer_title">Stop playback after</string>
+    <string name="sleep_timer_minutes">%1$d minutes</string>
+    <string name="sleep_timer_cancel">Cancel timer</string>
+    <string name="sleep_timer_remaining">%1$s left</string>
+    <string name="audio_spectrum">Audio spectrum that responds to the music</string>
+    <string name="audio_visualizer_permission_denied">Audio visualization permission was denied, so the spectrum is unavailable.</string>
     <string name="mode_order">In order</string>
     <string name="mode_repeat_one">Repeat one</string>
     <string name="mode_repeat_all">Repeat all</string>
@@ -57,10 +79,23 @@
 
     <string name="buffered_percent">Buffered</string>
     <string name="buffered_percent_with_value">Buffered: %1$d%%</string>
+    <string name="seek_unavailable">Not seekable</string>
 
     <string name="no_resume_item">Nothing to play</string>
     <string name="resume_item_missing">Last played item is not available</string>
 
     <string name="playback_channel_name">Audio playback</string>
     <string name="playback_channel_desc">Playback controls and background status</string>
+    <string name="notification_permission_needed">Allow notifications to show complete playback progress and controls on the notification shade and lock screen.</string>
+    <string name="theme_settings">Theme settings</string>
+    <string name="choose_theme_color">Choose theme color</string>
+    <string name="app_logo">Mint Music app icon</string>
+    <string name="theme_mint">Mint</string>
+    <string name="theme_blue">Blue</string>
+    <string name="theme_teal">Teal</string>
+    <string name="theme_purple">Purple</string>
+    <string name="theme_indigo">Indigo</string>
+    <string name="theme_pink">Pink</string>
+    <string name="theme_orange">Orange</string>
+    <string name="theme_red">Red</string>
 </resources>

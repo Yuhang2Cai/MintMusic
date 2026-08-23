@@ -16,11 +16,15 @@ import java.util.Locale
 data class ScanResult(val total: Int, val added: Int, val changed: Int, val unchanged: Int, val removed: Int, val durationMs: Long)
 
 class LibraryScanner(private val context: Context, private val database: MintDatabase) {
+    @Synchronized
     fun scan(folder: Uri, forceMetadata: Boolean = false): ScanResult {
         val started = System.currentTimeMillis()
-        val root = DocumentFile.fromTreeUri(context, folder)
+        val root = runCatching { DocumentFile.fromTreeUri(context, folder) }.getOrNull()
             ?: return ScanResult(0, 0, 0, 0, 0, System.currentTimeMillis() - started)
-        require(root.exists() && root.isDirectory) { "Selected music directory is unavailable" }
+        val isAccessibleDirectory = runCatching { root.exists() && root.isDirectory }.getOrDefault(false)
+        if (!isAccessibleDirectory) {
+            return ScanResult(0, 0, 0, 0, 0, System.currentTimeMillis() - started)
+        }
 
         val folderKey = folder.toString()
         val old = database.tracks().getByFolder(folderKey).associateBy { it.mediaUri }
@@ -86,7 +90,7 @@ class LibraryScanner(private val context: Context, private val database: MintDat
             album = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM).orEmpty()
             duration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
         }
-        retriever.release()
+        runCatching { retriever.release() }
         return Track("local:${file.uri}", title, artist, duration, SourceType.LOCAL, file.uri.toString(), album = album,
             folderUri = folder, sizeBytes = size, modifiedAtMs = modified, mimeType = file.type)
     }

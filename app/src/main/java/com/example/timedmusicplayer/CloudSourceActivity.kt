@@ -19,6 +19,7 @@ import com.example.timedmusicplayer.ui.AppViewModelFactory
 import com.example.timedmusicplayer.ui.cloud.CloudSourceEvent
 import com.example.timedmusicplayer.ui.cloud.CloudSourceUiState
 import com.example.timedmusicplayer.ui.cloud.CloudSourceViewModel
+import com.example.timedmusicplayer.ui.theme.ThemeColorStore
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -32,6 +33,7 @@ class CloudSourceActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        ThemeColorStore.applyTheme(this)
         super.onCreate(savedInstanceState)
         binding = ActivityCloudSourceBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -98,13 +100,8 @@ class CloudSourceActivity : AppCompatActivity() {
                 Toast.makeText(this, event.message, Toast.LENGTH_SHORT).show()
             }
 
-            is CloudSourceEvent.OpenPlayer -> {
-                startActivity(
-                    Intent(this, PlayerActivity::class.java).apply {
-                        putParcelableArrayListExtra(PlayerActivity.EXTRA_QUEUE, event.queue)
-                        putExtra(PlayerActivity.EXTRA_START_INDEX, event.startIndex)
-                    }
-                )
+            CloudSourceEvent.OpenPlayerScreen -> {
+                startActivity(Intent(this, PlayerActivity::class.java))
             }
 
             CloudSourceEvent.ClearNameInput -> {

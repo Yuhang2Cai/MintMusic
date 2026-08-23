@@ -10,16 +10,22 @@
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/app_green_primary"
+        android:background="?attr/colorPrimary"
         android:theme="@style/ThemeOverlay.MaterialComponents.ActionBar"
         app:title="@string/player"
         app:titleTextColor="@color/white" />
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivCover"
@@ -30,14 +36,22 @@
             android:scaleType="centerCrop"
             android:src="@drawable/cover_placeholder"
             app:shapeAppearanceOverlay="@style/MintWaveCircularCover"
-            app:strokeColor="@color/app_green_soft"
+            app:strokeColor="?attr/themeSoftColor"
             app:strokeWidth="3dp" />
+
+        <com.example.timedmusicplayer.ui.player.AudioSpectrumView
+            android:id="@+id/spectrumView"
+            android:layout_width="match_parent"
+            android:layout_height="96dp"
+            android:layout_marginTop="12dp"
+            android:contentDescription="@string/audio_spectrum"
+            android:paddingHorizontal="4dp" />
 
         <TextView
             android:id="@+id/tvTrackTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="8dp"
             android:ellipsize="end"
             android:maxLines="2"
             android:textColor="@color/app_text_primary"
@@ -49,19 +63,39 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="@color/app_green_primary"
+            android:textColor="?attr/colorPrimary"
             android:textSize="14sp"
             android:textStyle="bold" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnPlaybackMode"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:minHeight="36dp"
-            android:text="@string/playback_mode"
-            android:textAllCaps="false" />
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPlaybackMode"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:minHeight="40dp"
+                android:text="@string/playback_mode"
+                android:textAllCaps="false" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSleepTimer"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:maxLines="1"
+                android:minHeight="40dp"
+                android:text="@string/sleep_timer"
+                android:textAllCaps="false" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/loadingContainer"
@@ -77,7 +111,7 @@
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:indeterminate="true"
-                app:indicatorColor="@color/app_green_primary"
+                app:indicatorColor="?attr/colorPrimary"
                 app:indicatorSize="18dp"
                 app:trackThickness="2dp" />
 
@@ -102,7 +136,7 @@
                 android:id="@+id/seekBar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:progressTint="@color/app_green_primary"
+                android:progressTint="?attr/colorPrimary"
                 android:secondaryProgressTint="@android:color/darker_gray" />
 
             <LinearLayout
@@ -151,7 +185,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/previous"
                 android:src="@android:drawable/ic_media_previous"
-                android:tint="@color/app_green_primary" />
+                app:tint="?attr/colorPrimary" />
 
             <ImageButton
                 android:id="@+id/btnPlayPause"
@@ -161,7 +195,7 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/play_pause"
                 android:src="@android:drawable/ic_media_pause"
-                android:tint="@color/app_green_primary" />
+                app:tint="?attr/colorPrimary" />
 
             <ImageButton
                 android:id="@+id/btnNext"
@@ -170,9 +204,11 @@
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/next"
                 android:src="@android:drawable/ic_media_next"
-                android:tint="@color/app_green_primary" />
+                app:tint="?attr/colorPrimary" />
         </LinearLayout>
 
-    </LinearLayout>
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>

@@ -12,13 +12,32 @@ import com.example.timedmusicplayer.R
 import com.example.timedmusicplayer.artwork.ArtworkRepository
 import com.example.timedmusicplayer.model.SourceType
 import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.emotion.MoodAnalysisState
 import java.util.Locale
 
 class TrackLibraryAdapter(
-    private val onItemClick: (Track) -> Unit
+    private val onItemClick: (Track) -> Unit,
+    private val onItemLongClick: (Track) -> Unit,
+    private val onMoreClick: (Track) -> Unit
 ) : PagingDataAdapter<Track, TrackLibraryAdapter.TrackViewHolder>(TrackDiffCallback()) {
 
     private var artworkRepository: ArtworkRepository? = null
+    private var selectedIds: Set<String> = emptySet()
+    private var selectionMode = false
+    private var moodStates: Map<String, MoodAnalysisState> = emptyMap()
+
+    fun setMoodStates(states: Map<String, MoodAnalysisState>) {
+        if (moodStates == states) return
+        moodStates = states
+        notifyDataSetChanged()
+    }
+
+    fun setSelection(selectedIds: Set<String>, selectionMode: Boolean) {
+        if (this.selectedIds == selectedIds && this.selectionMode == selectionMode) return
+        this.selectedIds = selectedIds.toSet()
+        this.selectionMode = selectionMode
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -37,9 +56,22 @@ class TrackLibraryAdapter(
         } else {
             holder.itemView.context.getString(R.string.source_cloud)
         }
+        val mood = moodStates[track.id]
+        holder.moodTag.text = mood?.label
+        holder.moodTag.visibility = if (!mood?.label.isNullOrBlank()) View.VISIBLE else View.GONE
+        holder.analyzing.visibility = if (mood?.isAnalyzing == true) View.VISIBLE else View.GONE
+        holder.itemView.isActivated = track.id in selectedIds
+        holder.selection.visibility = if (selectionMode) View.VISIBLE else View.GONE
+        holder.selection.isChecked = track.id in selectedIds
+        holder.more.visibility = if (selectionMode) View.GONE else View.VISIBLE
         holder.itemView.setOnClickListener {
             onItemClick(track)
         }
+        holder.itemView.setOnLongClickListener {
+            onItemLongClick(track)
+            true
+        }
+        holder.more.setOnClickListener { onMoreClick(track) }
     }
 
     private fun buildSubtitle(track: Track): String {
@@ -62,6 +94,10 @@ class TrackLibraryAdapter(
         val cover: ImageView = itemView.findViewById(R.id.ivCover)
         val subtitle: TextView = itemView.findViewById(R.id.tvSubtitle)
         val sourceTag: TextView = itemView.findViewById(R.id.tvSourceTag)
+        val moodTag: TextView = itemView.findViewById(R.id.tvMoodTag)
+        val analyzing: View = itemView.findViewById(R.id.analyzingContainer)
+        val more: ImageView = itemView.findViewById(R.id.btnTrackMore)
+        val selection: android.widget.CheckBox = itemView.findViewById(R.id.cbTrackSelection)
     }
 
     private class TrackDiffCallback : DiffUtil.ItemCallback<Track>() {

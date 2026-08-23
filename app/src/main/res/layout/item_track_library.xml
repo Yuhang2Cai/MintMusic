@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    android:background="@drawable/bg_track_item"
+    android:layout_marginBottom="9dp"
+    android:background="@drawable/bg_track_item_selectable"
+    android:clickable="true"
+    android:focusable="true"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="12dp">
+    android:padding="10dp">
 
-    <ImageView
+    <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivCover"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
         android:layout_marginEnd="12dp"
         android:contentDescription="@null"
         android:scaleType="centerCrop"
-        android:src="@drawable/cover_placeholder" />
+        android:src="@drawable/cover_placeholder"
+        app:shapeAppearanceOverlay="@style/EditorialRoundedCover" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -30,7 +34,7 @@
             android:ellipsize="end"
             android:maxLines="2"
             android:textColor="@color/app_text_primary"
-            android:textSize="16sp"
+        android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -45,14 +49,75 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/tvMoodTag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="6dp"
+        android:background="@drawable/bg_mood_tag"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="4dp"
+        android:textColor="@color/app_sage_dark"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <TextView
         android:id="@+id/tvSourceTag"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_source_tag"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="6dp"
-        android:textColor="@color/app_green_primary"
+        android:paddingHorizontal="9dp"
+        android:paddingVertical="5dp"
+        android:textColor="?attr/colorPrimary"
         android:textSize="11sp"
         android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/analyzingContainer"
+        android:layout_width="34dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <com.google.android.material.progressindicator.CircularProgressIndicator
+            android:id="@+id/analysisIndicator"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:indeterminate="true"
+            app:indicatorColor="@color/app_sage"
+            app:indicatorSize="22dp"
+            app:trackThickness="2dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:text="@string/music_mood_analyzing"
+            android:textColor="@color/app_text_secondary"
+            android:textSize="9sp" />
+    </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btnTrackMore"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="2dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/edit_mood_tag"
+        android:padding="10dp"
+        android:src="@drawable/ic_more_vert"
+        app:tint="@color/app_text_secondary" />
+
+    <CheckBox
+        android:id="@+id/cbTrackSelection"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="6dp"
+        android:buttonTint="?attr/colorPrimary"
+        android:clickable="false"
+        android:focusable="false"
+        android:visibility="gone" />
 
 </LinearLayout>
