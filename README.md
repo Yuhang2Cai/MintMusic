@@ -1,6 +1,6 @@
 # MintMusic（薄荷音乐）
 
-MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Android 音乐播放器。项目采用 Kotlin、XML/ViewBinding 和 AndroidX Media3，实现后台播放、系统媒体控制、增量曲库扫描、同步歌词、睡眠定时、主题换色与可选的歌曲情绪分析。
+MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Android 音乐播放器。项目采用 Kotlin、XML/ViewBinding 和 AndroidX Media3，实现后台播放、系统媒体控制、增量曲库扫描、同步歌词、睡眠定时、主题换色与歌曲情绪分析。
 
 > 当前版本：`1.0` · 最低 Android 8.0（API 26）· 目标 Android 14（API 34）
 
@@ -12,7 +12,9 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 
 
-<img title="" src="file:///C:/Users/caid0/Documents/library-and-filter.gif" alt="library-and-filter.gif" width="269" data-align="center">
+<img title="" src="file:///C:/Users/caid0/Documents/library-and-filter.gif" alt="library-and-filter.gif" width="261" data-align="center">
+
+
 
 <!-- ![本地曲库扫描与筛选](docs/assets/demos/library-and-filter.gif) -->
 
@@ -54,11 +56,11 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 ### 歌曲情绪分析
 
-本地歌曲可选择上传到自建 Music2Emo 服务分析情绪标签、愉悦度和能量。服务完成推理后会删除临时音频。
+本地歌曲可上传到自建 Music2Emo 服务分析情绪标签、愉悦度和能量。服务完成推理后会删除临时音频。
 
 
 
-<img src="file:///C:/Users/caid0/Documents/mood-analysis.gif" title="" alt="mood-analysis.gif" width="299">
+<img title="" src="file:///C:/Users/caid0/Documents/mood-analysis.gif" alt="mood-analysis.gif" width="299" data-align="center">
 
 
 
@@ -95,6 +97,16 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 应用中的“智能获取歌词”指在线曲库匹配，并不会上传音频或使用 AI 转录。没有可靠匹配时会明确失败，不生成猜测歌词。
 
+#### 使用步骤
+
+1. 按下方“启动歌词与情绪服务”启动 FastAPI；模拟器访问 `10.0.2.2:8000`，真机需能访问部署机的 `8000` 端口，或通过 USB 执行 `adb reverse tcp:8000 tcp:8000`。
+2. 打开歌曲播放详情页，点击右上角 `⋮`，选择“智能获取歌词”，然后确认开始。
+3. 顶部会显示“正在获取歌词”的转圈状态。任务由 WorkManager 执行，离开播放页也会继续。
+4. 成功后提示“歌词已获取”，播放页底部出现两页指示点；向左滑动封面页或点击另一页指示点进入歌词页，向右滑动返回封面页。
+5. 若没有命中带时间轴的 LRC，会展示失败原因且不写入纯文本歌词。重新获取会替换该歌曲此前保存的歌词。
+
+查询依次使用 LrcAPI 和 LRCLIB，仅保存含 `[mm:ss.xx]` 时间标签的 LRC；不上传音频，也不需要歌词 API Key。
+
 ### 主题与界面
 
 - Editorial 风格首页、圆形唱片封面与动态频谱。
@@ -102,12 +114,22 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 - 支持系统深色模式、状态栏和导航栏颜色适配。
 - 中文为默认界面语言，同时提供主要英文字符串资源。
 
-### 可选情绪分析
+### 歌曲情绪分析
 
 - 使用 WorkManager 在后台提交分析任务。
-- 服务端可接入官方 Music2Emotion 项目，返回情绪、valence 和 arousal。
+- 服务端部署官方 Music2Emotion 项目，返回情绪、valence 和 arousal。
 - 单次上传最大 80 MB；请求结束后删除服务端临时目录。
 - 模型或 CUDA 环境不可用时返回明确错误，不使用模拟结果代替推理。
+
+#### 使用步骤
+
+1. 完成下方“部署 Music2Emotion（必需）”并启动 FastAPI。情绪分析只支持本地歌曲，云端音源不会上传。
+2. 打开本地歌曲的播放详情页，点击右上角 `⋮`，选择“分析歌曲情绪”，确认后点击“开始分析”。
+3. 分析中，主页对应歌曲右侧显示小型转圈；播放详情页顶部中间显示“分析中”。任务由 WorkManager 持续执行。
+4. 成功后，主页“本地”标签左侧和播放详情页顶部会显示情绪标签；结果弹窗展示最多四个标签、愉悦度（valence）和能量（arousal）。
+5. 需要人工修正时，在主页歌曲右侧点击 `⋮`，选择修改或隐藏情绪标签。此操作只修改本地展示，不重新运行模型。
+
+所选本地音频会临时上传到你部署的服务，推理完成后服务器立即删除临时文件。情绪分析不生成歌词。
 
 ## 技术架构
 
@@ -120,7 +142,7 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 | 后台任务 | WorkManager                            | 歌词查询和歌曲情绪分析            |
 | 网络   | OkHttp、Media3 OkHttp DataSource        | API 请求、在线流播放和弱网恢复      |
 | 图片   | Coil                                   | 本地封面和远程封面加载与缓存         |
-| 辅助服务 | FastAPI                                | 同步歌词匹配和可选 Music2Emo 推理 |
+| 辅助服务 | FastAPI                                | 同步歌词匹配和 Music2Emo 推理 |
 
 播放进度每 500 ms 更新一次可见 UI；持久化采用节流策略，并在暂停、切歌、拖动和错误等关键节点立即保存。Room 是曲库、在线音源、播放队列和历史记录的主要数据源，DataStore 保存目录与播放模式等轻量设置。
 
@@ -174,9 +196,9 @@ cd MintMusic
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## 启动歌词服务
+## 启动歌词与情绪服务
 
-同步歌词匹配需要项目内的 FastAPI 服务。模拟器默认通过 `http://10.0.2.2:8000` 访问开发电脑。
+同步歌词匹配和歌曲情绪分析都由项目内的 FastAPI 服务提供。模拟器默认通过 `http://10.0.2.2:8000` 访问开发电脑。
 
 ```powershell
 python -m venv .venv
@@ -196,7 +218,7 @@ curl http://127.0.0.1:8000/health
 | ---- | -------------------- | -------------- |
 | GET  | `/health`            | 服务状态和歌词模式      |
 | GET  | `/v1/lyrics/lookup`  | 按元数据查询同步歌词     |
-| POST | `/v1/music-emotions` | 上传本地歌曲进行可选情绪分析 |
+| POST | `/v1/music-emotions` | 上传本地歌曲进行情绪分析 |
 
 可用环境变量：
 
@@ -207,9 +229,20 @@ curl http://127.0.0.1:8000/health
 | `MINT_LRCLIB_URL`            | `https://lrclib.net/api/get` | LRCLIB 地址          |
 | `MINT_MUSIC2EMO_HOME`        | 无                            | Music2Emotion 项目目录 |
 
-## 配置 Music2Emotion（可选）
+## 部署 Music2Emotion（必需）
 
-情绪分析不是歌词功能的必需依赖。需要时按官方仓库安装：
+歌曲情绪分析依赖 Music2Emotion。未部署模型或 CUDA 运行环境时，应用会明确提示分析失败。建议在具备 NVIDIA GPU 与 CUDA 的 Windows 主机部署；CPU 仅适合排障，不建议日常推理。
+
+1. 创建 Python 环境并安装 FastAPI 依赖：
+
+```powershell
+python -m venv .venv
+.venv\Scripts\python -m pip install -r server\requirements.txt
+```
+
+2. 按本机 CUDA 版本从 [PyTorch 官方安装页](https://pytorch.org/get-started/locally/) 安装支持 CUDA 的 PyTorch，并用 `nvidia-smi` 确认 GPU 可用。
+
+3. 克隆官方仓库、安装依赖并配置 Music2Emotion 目录：
 
 ```powershell
 git clone https://github.com/AMAAI-Lab/Music2Emotion server\vendor\Music2Emotion
@@ -217,12 +250,20 @@ git clone https://github.com/AMAAI-Lab/Music2Emotion server\vendor\Music2Emotion
 $env:MINT_MUSIC2EMO_HOME = (Resolve-Path server\vendor\Music2Emotion)
 ```
 
-模型和 CUDA 依赖会显著增加磁盘与显存占用，因此 `server/vendor/`、模型缓存和运行产物不会提交到本仓库。
+4. 首次调用 `/v1/music-emotions` 会下载官方 checkpoint。模型加载完成后启动（或重启）FastAPI：
+
+```powershell
+.venv\Scripts\python -m uvicorn app:app --app-dir server --host 0.0.0.0 --port 8000
+```
+
+5. 部署机运行 `curl http://127.0.0.1:8000/health` 检查服务。真机必须能访问部署机的 `8000` 端口；若手机只通过 USB 连接，执行 `adb reverse tcp:8000 tcp:8000`。
+
+模型、CUDA 依赖和运行产物会显著增加磁盘与显存占用，因此 `server/vendor/`、模型缓存和运行产物不会提交到本仓库。
 
 ## 当前限制
 
 - 在线歌词和情绪分析依赖开发电脑上的 FastAPI 服务。
 - 歌词仅接受带时间轴的 LRC，不展示无时间轴纯文本歌词。
-- 情绪分析仅支持本地歌曲，并需要独立的 Music2Emotion/Python/CUDA 环境。
+- 情绪分析仅支持本地歌曲，且必须部署 Music2Emotion、Python 与 CUDA 推理环境。
 - 在线音源需要提供可由 Media3 直接播放的 HTTP/HTTPS 音频流，受 DRM 保护的地址不受支持。
 - 当前 Release 构建尚未启用代码压缩和混淆。

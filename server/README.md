@@ -38,7 +38,8 @@ rate limits for the upstream providers.
 
 ## Music2Emo song-emotion analysis
 
-The player can optionally upload one local song to `POST /v1/music-emotions`.
+The player uploads one local song to `POST /v1/music-emotions` when the user starts
+an emotion analysis.
 This is **not** a lyric generator: the service returns Music2Emo's mood labels,
 valence and arousal, then immediately deletes the temporary upload. The model
 is lazy-loaded only when the endpoint is called and runs one GPU inference at a
