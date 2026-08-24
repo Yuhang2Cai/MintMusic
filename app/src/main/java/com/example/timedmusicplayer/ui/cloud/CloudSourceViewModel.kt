@@ -5,7 +5,8 @@ import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.timedmusicplayer.R
-import com.example.timedmusicplayer.data.MusicRepository
+import com.example.timedmusicplayer.data.repository.CloudSourceRepository
+import com.example.timedmusicplayer.data.repository.LibraryRepository
 import com.example.timedmusicplayer.model.CloudSource
 import com.example.timedmusicplayer.model.TrackFilter
 import com.example.timedmusicplayer.playback.PlaybackController
@@ -19,7 +20,8 @@ import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 class CloudSourceViewModel(
     application: Application,
-    private val repository: MusicRepository,
+    private val cloudSourceRepository: CloudSourceRepository,
+    private val libraryRepository: LibraryRepository,
     private val playbackController: PlaybackController
 ) : AndroidViewModel(application) {
 
@@ -59,11 +61,11 @@ class CloudSourceViewModel(
                 safeUrl.isBlank() -> sendMessage(app.getString(R.string.no_stream_url))
                 !isValidUrl(safeUrl) -> sendMessage(app.getString(R.string.invalid_stream_url))
                 safeCoverUrl.isNotBlank() && !isValidUrl(safeCoverUrl) -> sendMessage(app.getString(R.string.invalid_stream_url))
-                repository.hasDuplicateCloudUrl(safeUrl) -> sendMessage(app.getString(R.string.duplicate_stream_url))
+                cloudSourceRepository.hasDuplicateUrl(safeUrl) -> sendMessage(app.getString(R.string.duplicate_stream_url))
                 else -> {
                     uiStateValue.value = uiStateValue.value.copy(isSaving = true)
                     val finalName = if (safeInputName.isBlank()) deriveName(safeUrl) else safeInputName
-                    repository.addCloudSource(finalName, safeUrl, safeCoverUrl)
+                    cloudSourceRepository.addSource(finalName, safeUrl, safeCoverUrl)
                     uiStateValue.value = uiStateValue.value.copy(inputName = "", isSaving = false)
                     loadSourcesNow()
                 }
@@ -79,14 +81,14 @@ class CloudSourceViewModel(
         }
 
         viewModelScope.launch {
-            repository.renameCloudSource(sourceId, safeName)
+            cloudSourceRepository.renameSource(sourceId, safeName)
             loadSourcesNow()
         }
     }
 
     fun onDeleteSource(sourceId: String) {
         viewModelScope.launch {
-            repository.deleteCloudSource(sourceId)
+            cloudSourceRepository.deleteSource(sourceId)
             loadSourcesNow()
         }
     }
@@ -97,7 +99,7 @@ class CloudSourceViewModel(
             return
         }
         viewModelScope.launch {
-            val cloudTracks = repository.getTracks(TrackFilter.CLOUD)
+            val cloudTracks = libraryRepository.getTracks(TrackFilter.CLOUD)
             val targetIndex = cloudTracks.indexOfFirst { it.id == "cloud:${source.id}" }
             if (targetIndex == -1) return@launch
             playbackController.playQueue(cloudTracks, targetIndex, forcePlay = true)
@@ -114,7 +116,7 @@ class CloudSourceViewModel(
     }
 
     private suspend fun loadSourcesNow() {
-        val entries = repository.getCloudSources()
+        val entries = cloudSourceRepository.getSources()
         uiStateValue.value = uiStateValue.value.copy(
             entries = entries,
             isEmpty = entries.isEmpty()

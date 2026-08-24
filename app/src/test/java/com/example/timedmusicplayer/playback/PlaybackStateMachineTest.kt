@@ -3,6 +3,7 @@ package com.example.timedmusicplayer.playback
 import androidx.media3.common.PlaybackException
 import com.example.timedmusicplayer.network.PlaybackErrorClassifier
 import com.example.timedmusicplayer.network.RecoveryPolicy
+import com.example.timedmusicplayer.playback.checkpoint.CheckpointPolicy
 import java.io.IOException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

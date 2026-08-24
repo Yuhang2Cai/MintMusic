@@ -15,7 +15,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.example.timedmusicplayer.model.SourceType
 import com.example.timedmusicplayer.model.Track
-import com.example.timedmusicplayer.data.MusicRepository
+import com.example.timedmusicplayer.data.AppDataContainer
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 @androidx.annotation.OptIn(UnstableApi::class)
 class PlaybackController private constructor(context: Context) {
     private val appContext = context.applicationContext
-    private val repository = MusicRepository.getInstance(appContext)
+    private val settingsRepository = AppDataContainer.get(appContext).settingsRepository
     private val snapshotState = MutableStateFlow<PlaybackSnapshot?>(null)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -62,9 +62,9 @@ class PlaybackController private constructor(context: Context) {
                     controller = it
                     it.addListener(listener)
                     scope.launch {
-                        val restoredMode = repository.getPlaybackMode(PlaybackMode.ORDER.name)
+                        val restoredMode = settingsRepository.playbackMode()
                         if (controller !== it) return@launch
-                        applyPlaybackMode(it, PlaybackMode.fromRaw(restoredMode))
+                        applyPlaybackMode(it, restoredMode)
                         pendingQueue?.let { request ->
                             playQueue(request.tracks, request.startIndex, request.forcePlay, request.startPositionMs)
                         }
@@ -126,7 +126,7 @@ class PlaybackController private constructor(context: Context) {
         val active = controller ?: return
         val next = playbackMode(active).next()
         applyPlaybackMode(active, next)
-        scope.launch(Dispatchers.IO) { repository.savePlaybackMode(next.name) }
+        scope.launch(Dispatchers.IO) { settingsRepository.savePlaybackMode(next) }
         emitSnapshot()
     }
 

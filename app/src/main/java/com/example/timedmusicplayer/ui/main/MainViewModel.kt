@@ -6,7 +6,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import com.example.timedmusicplayer.R
-import com.example.timedmusicplayer.data.MusicRepository
+import com.example.timedmusicplayer.data.repository.LibraryRepository
+import com.example.timedmusicplayer.data.repository.LibrarySettingsRepository
+import com.example.timedmusicplayer.data.repository.PlaybackHistoryRepository
+import com.example.timedmusicplayer.domain.library.DeleteLibraryContentUseCase
 import com.example.timedmusicplayer.emotion.MoodAnalysisRepository
 import com.example.timedmusicplayer.model.Track
 import com.example.timedmusicplayer.model.TrackFilter
@@ -33,7 +36,10 @@ import kotlinx.coroutines.withContext
 
 class MainViewModel(
     application: Application,
-    private val repository: MusicRepository,
+    private val libraryRepository: LibraryRepository,
+    private val settingsRepository: LibrarySettingsRepository,
+    private val playbackHistoryRepository: PlaybackHistoryRepository,
+    private val deleteLibraryContent: DeleteLibraryContentUseCase,
     private val playbackController: PlaybackController,
     private val moodRepository: MoodAnalysisRepository,
     private val appearanceRepository: AppearanceRepository
@@ -54,14 +60,12 @@ class MainViewModel(
     val events = eventChannel.receiveAsFlow()
     @OptIn(ExperimentalCoroutinesApi::class)
     val pagingData = combine(filterValue, pagingRefreshVersion) { filter, _ -> filter }
-        .flatMapLatest(repository::pagingTracks)
+        .flatMapLatest(libraryRepository::pagingTracks)
         .cachedIn(viewModelScope)
 
     init {
         viewModelScope.launch {
-            val restoredFilter = runCatching {
-                TrackFilter.valueOf(repository.getSelectedFilter(TrackFilter.ALL.name))
-            }.getOrDefault(TrackFilter.ALL)
+            val restoredFilter = settingsRepository.selectedFilter()
             filterValue.value = restoredFilter
             uiStateValue.value = uiStateValue.value.copy(
                 activeFilter = restoredFilter,
@@ -102,14 +106,14 @@ class MainViewModel(
         }
         uiStateValue.value = uiStateValue.value.copy(activeFilter = filter)
         filterValue.value = filter
-        viewModelScope.launch { repository.saveSelectedFilter(filter.name) }
+        viewModelScope.launch { settingsRepository.saveSelectedFilter(filter) }
         clearSelection()
         loadLibrary(forceRefresh = false)
     }
 
     fun onSelectFolderClicked() {
         viewModelScope.launch {
-            eventChannel.send(MainEvent.OpenFolderPicker(repository.getLocalFolderUri()))
+            eventChannel.send(MainEvent.OpenFolderPicker(settingsRepository.localFolderUri()))
         }
     }
 
@@ -118,7 +122,7 @@ class MainViewModel(
             return
         }
         viewModelScope.launch {
-            repository.saveLocalFolder(uri)
+            libraryRepository.saveLocalFolder(uri)
             loadLibrary(forceRefresh = true)
         }
     }
@@ -137,14 +141,14 @@ class MainViewModel(
 
     fun onResumeLastClicked() {
         viewModelScope.launch {
-            val lastPlayback = repository.getLastPlayback()
+            val lastPlayback = playbackHistoryRepository.lastPlayback()
             if (lastPlayback == null) {
                 eventChannel.send(MainEvent.ShowMessage(app.getString(R.string.no_resume_item)))
                 return@launch
             }
 
             val allTracks = withContext(Dispatchers.IO) {
-                repository.getTracks(TrackFilter.ALL, forceRefresh = false)
+                libraryRepository.getTracks(TrackFilter.ALL, forceRefresh = false)
             }
             if (allTracks.isEmpty()) {
                 eventChannel.send(MainEvent.ShowMessage(app.getString(R.string.library_empty_tip)))
@@ -209,7 +213,7 @@ class MainViewModel(
     fun onDeleteAllClicked() {
         viewModelScope.launch {
             val filter = uiStateValue.value.activeFilter
-            val count = repository.trackCount(filter)
+            val count = libraryRepository.trackCount(filter)
             if (count > 0) eventChannel.send(MainEvent.ConfirmDeleteAll(count, filter))
         }
     }
@@ -231,7 +235,7 @@ class MainViewModel(
     private fun playTrack(track: Track) {
         viewModelScope.launch {
             val tracks = withContext(Dispatchers.IO) {
-                repository.getTracks(uiStateValue.value.activeFilter, forceRefresh = false)
+                libraryRepository.getTracks(uiStateValue.value.activeFilter, forceRefresh = false)
             }
             val index = tracks.indexOfFirst { it.id == track.id }
             if (index == -1) return@launch
@@ -243,7 +247,7 @@ class MainViewModel(
     fun onDeleteTracksConfirmed(tracks: List<Track>) {
         if (tracks.isEmpty()) return
         viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) { repository.deleteTracks(tracks) }
+            val result = withContext(Dispatchers.IO) { libraryRepository.deleteTracks(tracks) }
             clearSelection()
             loadLibrary(forceRefresh = false)
             val message = if (result.failed == 0) {
@@ -257,7 +261,7 @@ class MainViewModel(
 
     fun onDeleteAllConfirmed(filter: TrackFilter) {
         viewModelScope.launch {
-            val result = repository.deleteAllTracks(filter)
+            val result = deleteLibraryContent(filter)
             clearSelection()
             loadLibrary(forceRefresh = false)
             val message = if (result.failed == 0) {
@@ -314,8 +318,8 @@ class MainViewModel(
         loadJob = viewModelScope.launch {
             val filter = uiStateValue.value.activeFilter
             val count = withContext(Dispatchers.IO) {
-                repository.refreshLibrary(forceRefresh)
-                repository.trackCount(filter)
+                libraryRepository.refresh(forceRefresh)
+                libraryRepository.trackCount(filter)
             }
             uiStateValue.value = uiStateValue.value.copy(
                 libraryCountText = app.getString(R.string.library_count, count),

@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.work.WorkManager
-import com.example.timedmusicplayer.data.MusicRepository
+import com.example.timedmusicplayer.data.AppDataContainer
 import com.example.timedmusicplayer.emotion.MoodAnalysisRepository
 import com.example.timedmusicplayer.lyrics.LyricsRepository
 import com.example.timedmusicplayer.playback.PlaybackController
@@ -17,7 +17,7 @@ class AppViewModelFactory(
     private val application: Application
 ) : ViewModelProvider.Factory {
 
-    private val repository by lazy { MusicRepository.getInstance(application) }
+    private val dataContainer by lazy { AppDataContainer.get(application) }
     private val playbackController by lazy { PlaybackController.getInstance(application) }
     private val workManager by lazy { WorkManager.getInstance(application) }
     private val moodRepository by lazy { MoodAnalysisRepository(application, workManager) }
@@ -28,7 +28,16 @@ class AppViewModelFactory(
         @Suppress("UNCHECKED_CAST")
         return when {
             modelClass.isAssignableFrom(MainViewModel::class.java) -> {
-                MainViewModel(application, repository, playbackController, moodRepository, appearanceRepository) as T
+                MainViewModel(
+                    application,
+                    dataContainer.libraryRepository,
+                    dataContainer.settingsRepository,
+                    dataContainer.playbackHistoryRepository,
+                    dataContainer.deleteLibraryContent,
+                    playbackController,
+                    moodRepository,
+                    appearanceRepository
+                ) as T
             }
 
             modelClass.isAssignableFrom(PlayerViewModel::class.java) -> {
@@ -36,7 +45,12 @@ class AppViewModelFactory(
             }
 
             modelClass.isAssignableFrom(CloudSourceViewModel::class.java) -> {
-                CloudSourceViewModel(application, repository, playbackController) as T
+                CloudSourceViewModel(
+                    application,
+                    dataContainer.cloudSourceRepository,
+                    dataContainer.libraryRepository,
+                    playbackController
+                ) as T
             }
 
             else -> error("Unknown ViewModel class: ${modelClass.name}")
