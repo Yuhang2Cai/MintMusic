@@ -1,7 +1,7 @@
 package com.example.timedmusicplayer.data.db.mapper
 
 import com.example.timedmusicplayer.data.db.entity.CloudSourceEntity
-import com.example.timedmusicplayer.model.CloudSource
+import com.example.timedmusicplayer.domain.model.CloudSource
 
 fun CloudSourceEntity.toModel() = CloudSource(id, name, url, coverUrl)
 

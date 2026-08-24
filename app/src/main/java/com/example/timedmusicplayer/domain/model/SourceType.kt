@@ -1,4 +1,4 @@
-package com.example.timedmusicplayer.model
+package com.example.timedmusicplayer.domain.model
 
 /**
  * 曲目来源类型。

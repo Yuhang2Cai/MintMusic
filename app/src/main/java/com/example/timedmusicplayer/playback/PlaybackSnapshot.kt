@@ -1,6 +1,6 @@
 package com.example.timedmusicplayer.playback
 
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.Track
 
 /**
  * 从服务层暴露给 UI 的不可变播放快照。

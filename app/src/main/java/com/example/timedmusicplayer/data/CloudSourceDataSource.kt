@@ -1,7 +1,7 @@
 package com.example.timedmusicplayer.data
 
 import android.content.Context
-import com.example.timedmusicplayer.model.CloudSource
+import com.example.timedmusicplayer.domain.model.CloudSource
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID

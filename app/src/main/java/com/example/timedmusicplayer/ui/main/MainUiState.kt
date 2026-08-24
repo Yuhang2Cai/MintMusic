@@ -1,7 +1,7 @@
-﻿package com.example.timedmusicplayer.ui.main
+package com.example.timedmusicplayer.ui.main
 
-import com.example.timedmusicplayer.model.Track
-import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.domain.model.Track
+import com.example.timedmusicplayer.domain.model.TrackFilter
 import com.example.timedmusicplayer.emotion.MoodAnalysisState
 import com.example.timedmusicplayer.ui.theme.ThemeColorOption
 

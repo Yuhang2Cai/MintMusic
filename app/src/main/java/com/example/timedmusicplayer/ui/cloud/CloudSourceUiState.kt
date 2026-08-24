@@ -1,6 +1,6 @@
-﻿package com.example.timedmusicplayer.ui.cloud
+package com.example.timedmusicplayer.ui.cloud
 
-import com.example.timedmusicplayer.model.CloudSource
+import com.example.timedmusicplayer.domain.model.CloudSource
 
 data class CloudSourceUiState(
     val entries: List<CloudSource> = emptyList(),

@@ -8,7 +8,7 @@ import coil.ImageLoader
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.example.timedmusicplayer.R
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.Track
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

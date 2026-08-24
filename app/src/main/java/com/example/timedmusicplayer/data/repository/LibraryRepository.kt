@@ -11,9 +11,9 @@ import com.example.timedmusicplayer.data.db.mapper.toModel
 import com.example.timedmusicplayer.data.migration.LegacyDataMigrator
 import com.example.timedmusicplayer.data.model.DeleteTracksResult
 import com.example.timedmusicplayer.data.scanner.LibraryScanner
-import com.example.timedmusicplayer.model.SourceType
-import com.example.timedmusicplayer.model.Track
-import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.domain.model.SourceType
+import com.example.timedmusicplayer.domain.model.Track
+import com.example.timedmusicplayer.domain.model.TrackFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll

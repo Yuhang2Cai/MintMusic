@@ -2,8 +2,8 @@ package com.example.timedmusicplayer.data.repository
 
 import com.example.timedmusicplayer.data.db.MintDatabase
 import com.example.timedmusicplayer.data.db.mapper.toEntity
-import com.example.timedmusicplayer.model.SourceType
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.SourceType
+import com.example.timedmusicplayer.domain.model.Track
 
 /** Keeps the derived cloud rows in the unified track table consistent with cloud_sources. */
 internal class CloudTrackSynchronizer(

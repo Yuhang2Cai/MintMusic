@@ -10,7 +10,7 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
   <a href="https://github.com/Yuhang2Cai/MintMusic/raw/refs/heads/master/downloads/MintMusic-v1.0.apk"><strong>⬇️ 直接下载 MintMusic v1.0 APK（13.2 MB）</strong></a>
 </p>
 
-当前提供的是已签名、可直接安装的测试版 APK。Android 可能会提示允许“安装未知应用”；安装包的 SHA-256 为 `760321EC9E781F94AFC3FD7013A775A920AB453EA52BE09554E2E8086FE79C37`。
+当前提供的是已签名、可直接安装的测试版 APK。Android 可能会提示允许“安装未知应用”；安装包的 SHA-256 为 `B13DE0674D5559196BE924F108A285AF2CA0BD651AA74440945D96A52C9955FE`。
 
 ## 功能演示
 
@@ -129,18 +129,20 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 ## 技术架构
 
-| 层级   | 主要实现                                   | 职责                   |
-| ---- | -------------------------------------- | -------------------- |
-| UI   | AppCompat、XML、ViewBinding、RecyclerView | 曲库、播放器、在线音源和主题界面     |
-| 状态   | ViewModel、StateFlow                    | 合并曲库、播放、歌词与情绪状态      |
-| 播放   | Media3 ExoPlayer、MediaSessionService   | 后台播放、媒体会话、队列和系统控制    |
-| 数据   | Room、DataStore                         | 曲库索引、播放历史、队列与轻量设置    |
-| 后台任务 | WorkManager                            | 歌词查询和歌曲情绪分析          |
-| 网络   | OkHttp、Media3 OkHttp DataSource        | API 请求、在线流播放和弱网恢复    |
-| 图片   | Coil                                   | 本地封面和远程封面加载与缓存       |
-| 辅助服务 | FastAPI                                | 同步歌词匹配和 Music2Emo 推理 |
+| 层级 | 主要实现 | 职责 |
+| ---- | -------- | ---- |
+| UI | AppCompat、XML、ViewBinding、RecyclerView | 渲染曲库、播放器、在线音源和主题界面，并把用户操作转交给 ViewModel |
+| 状态 | ViewModel、StateFlow | 组合曲库、播放、歌词与情绪状态，向 UI 暴露不可变状态和一次性事件 |
+| 领域 | `domain/model`、UseCase | 定义跨层业务模型，并承载跨仓库的业务操作 |
+| 数据 | Repository、Room、DataStore | 按曲库、云端源、设置和播放历史拆分数据职责 |
+| 播放 | Media3、MediaSessionService、ExoPlayer | 后台播放与系统媒体控制；定时、恢复和持久化策略由独立组件负责 |
+| 后台任务 | WorkManager | 歌词查询和歌曲情绪分析 |
+| 网络与图片 | OkHttp、Media3 OkHttp DataSource、Coil | API 请求、在线流播放、弱网处理和封面缓存 |
+| 辅助服务 | FastAPI | 同步歌词匹配和 Music2Emo 推理 |
 
-播放进度每 500 ms 更新一次可见 UI；持久化采用节流策略，并在暂停、切歌、拖动和错误等关键节点立即保存。Room 是曲库、在线音源、播放队列和历史记录的主要数据源，DataStore 保存目录与播放模式等轻量设置。
+`AppDataContainer` 是应用级数据依赖的组合入口，统一创建迁移器、设置仓库、曲库仓库、云端源仓库、播放历史仓库和跨表删除用例。Room 的 entity、DAO 与 mapper 分文件维护，业务层统一使用 `domain/model` 中的 `Track`、`CloudSource`、`SourceType` 和 `TrackFilter`，不会把 Room entity 暴露给 UI 或播放层。
+
+`PlaybackService` 只负责 Media3 生命周期和组件装配。播放器构造、MediaSession 回调、通知渠道、断点保存、网络恢复和睡眠定时分别位于独立组件中。播放器详情页每 500 ms 更新进度，迷你播放器每 1 秒更新；断点持久化采用节流策略，并在暂停、切歌、拖动和错误等关键节点立即保存。
 
 ## 项目结构
 
@@ -148,11 +150,23 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 MintMusic/
 ├─ app/                         Android 应用
 │  ├─ src/main/java/.../
-│  │  ├─ data/                  Room、扫描和数据仓库
+│  │  ├─ data/                  数据层与应用级依赖组合
+│  │  │  ├─ db/                Room entity、DAO 与 mapper
+│  │  │  ├─ migration/         旧版存储数据迁移
+│  │  │  ├─ model/             数据操作结果和值对象
+│  │  │  ├─ repository/        曲库、云端源、设置与播放历史仓库
+│  │  │  └─ scanner/           本地媒体扫描
+│  │  ├─ domain/                领域层
+│  │  │  ├─ model/             Track、CloudSource 等跨层业务模型
+│  │  │  └─ library/           曲库业务用例
 │  │  ├─ emotion/               情绪分析任务与状态
 │  │  ├─ lyrics/                LRC 解析、保存和歌词视图
 │  │  ├─ network/               服务地址与弱网恢复
 │  │  ├─ playback/              Media3 播放栈与频谱
+│  │  │  ├─ checkpoint/        播放断点与队列持久化
+│  │  │  ├─ recovery/          网络恢复协调
+│  │  │  ├─ service/           播放器、会话与通知组件
+│  │  │  └─ timer/             睡眠定时
 │  │  └─ ui/                    ViewModel、格式化和主题
 │  └─ src/main/res/             布局、主题、图标与字符串
 ├─ macrobenchmark/              Android 宏基准模块

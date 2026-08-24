@@ -1,8 +1,8 @@
 package com.example.timedmusicplayer.data.db.mapper
 
 import com.example.timedmusicplayer.data.db.entity.TrackEntity
-import com.example.timedmusicplayer.model.SourceType
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.SourceType
+import com.example.timedmusicplayer.domain.model.Track
 
 fun TrackEntity.toModel(): Track {
     val safeSourceType = runCatching { SourceType.valueOf(sourceType) }.getOrElse {

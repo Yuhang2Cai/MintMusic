@@ -9,7 +9,7 @@ import com.example.timedmusicplayer.data.db.entity.PlaybackHistoryEntity
 import com.example.timedmusicplayer.data.db.mapper.toEntity
 import com.example.timedmusicplayer.data.index.LocalTrackIndexStore
 import com.example.timedmusicplayer.data.repository.CloudTrackSynchronizer
-import com.example.timedmusicplayer.model.CloudSource
+import com.example.timedmusicplayer.domain.model.CloudSource
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 

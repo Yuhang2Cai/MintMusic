@@ -3,8 +3,8 @@ package com.example.timedmusicplayer.data
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import com.example.timedmusicplayer.model.SourceType
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.SourceType
+import com.example.timedmusicplayer.domain.model.Track
 import java.util.ArrayDeque
 import java.util.Locale
 

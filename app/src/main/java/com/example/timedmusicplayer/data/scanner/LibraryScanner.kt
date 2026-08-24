@@ -8,8 +8,8 @@ import com.example.timedmusicplayer.data.db.MintDatabase
 import com.example.timedmusicplayer.data.db.entity.LibraryFolderEntity
 import com.example.timedmusicplayer.data.db.entity.TrackEntity
 import com.example.timedmusicplayer.data.db.mapper.toEntity
-import com.example.timedmusicplayer.model.SourceType
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.SourceType
+import com.example.timedmusicplayer.domain.model.Track
 import java.util.ArrayDeque
 import java.util.Locale
 

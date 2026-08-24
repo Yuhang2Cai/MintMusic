@@ -1,8 +1,8 @@
 package com.example.timedmusicplayer.data.index
 
 import android.content.Context
-import com.example.timedmusicplayer.model.SourceType
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.SourceType
+import com.example.timedmusicplayer.domain.model.Track
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest

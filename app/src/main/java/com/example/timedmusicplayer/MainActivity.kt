@@ -36,8 +36,8 @@ import com.example.timedmusicplayer.adapter.TrackLibraryAdapter
 import com.example.timedmusicplayer.artwork.ArtworkRepository
 import com.example.timedmusicplayer.databinding.ActivityMainBinding
 import com.example.timedmusicplayer.databinding.MiniPlayerOverlayBinding
-import com.example.timedmusicplayer.model.Track
-import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.domain.model.Track
+import com.example.timedmusicplayer.domain.model.TrackFilter
 import com.example.timedmusicplayer.ui.AppViewModelFactory
 import com.example.timedmusicplayer.ui.main.MainEvent
 import com.example.timedmusicplayer.ui.main.MainUiState

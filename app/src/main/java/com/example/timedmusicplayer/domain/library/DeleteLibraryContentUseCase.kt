@@ -3,8 +3,8 @@ package com.example.timedmusicplayer.domain.library
 import com.example.timedmusicplayer.data.db.MintDatabase
 import com.example.timedmusicplayer.data.migration.LegacyDataMigrator
 import com.example.timedmusicplayer.data.model.DeleteTracksResult
-import com.example.timedmusicplayer.model.SourceType
-import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.domain.model.SourceType
+import com.example.timedmusicplayer.domain.model.TrackFilter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

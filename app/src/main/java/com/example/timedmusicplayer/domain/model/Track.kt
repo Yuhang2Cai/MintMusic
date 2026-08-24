@@ -1,4 +1,4 @@
-package com.example.timedmusicplayer.model
+package com.example.timedmusicplayer.domain.model
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize

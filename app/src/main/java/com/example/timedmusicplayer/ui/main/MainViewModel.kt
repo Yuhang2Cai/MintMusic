@@ -1,4 +1,4 @@
-﻿package com.example.timedmusicplayer.ui.main
+package com.example.timedmusicplayer.ui.main
 
 import android.app.Application
 import android.net.Uri
@@ -11,9 +11,9 @@ import com.example.timedmusicplayer.data.repository.LibrarySettingsRepository
 import com.example.timedmusicplayer.data.repository.PlaybackHistoryRepository
 import com.example.timedmusicplayer.domain.library.DeleteLibraryContentUseCase
 import com.example.timedmusicplayer.emotion.MoodAnalysisRepository
-import com.example.timedmusicplayer.model.Track
-import com.example.timedmusicplayer.model.TrackFilter
-import com.example.timedmusicplayer.model.SourceType
+import com.example.timedmusicplayer.domain.model.Track
+import com.example.timedmusicplayer.domain.model.TrackFilter
+import com.example.timedmusicplayer.domain.model.SourceType
 import com.example.timedmusicplayer.playback.PlaybackController
 import com.example.timedmusicplayer.playback.PlaybackController.PlaybackTickMode
 import com.example.timedmusicplayer.playback.PlaybackSnapshot

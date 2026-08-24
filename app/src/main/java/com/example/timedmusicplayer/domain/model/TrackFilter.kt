@@ -1,4 +1,4 @@
-package com.example.timedmusicplayer.model
+package com.example.timedmusicplayer.domain.model
 
 /**
  * 音乐库筛选项。

@@ -1,6 +1,6 @@
 package com.example.timedmusicplayer.ui.player
 
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.Track
 import com.example.timedmusicplayer.lyrics.LyricLine
 
 data class PlayerUiState(

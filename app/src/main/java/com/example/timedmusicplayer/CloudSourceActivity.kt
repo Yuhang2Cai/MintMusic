@@ -1,4 +1,4 @@
-﻿package com.example.timedmusicplayer
+package com.example.timedmusicplayer
 
 import android.content.Intent
 import android.os.Bundle
@@ -15,7 +15,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.timedmusicplayer.adapter.CloudSourceAdapter
 import com.example.timedmusicplayer.databinding.ActivityCloudSourceBinding
-import com.example.timedmusicplayer.model.CloudSource
+import com.example.timedmusicplayer.domain.model.CloudSource
 import com.example.timedmusicplayer.ui.AppViewModelFactory
 import com.example.timedmusicplayer.ui.cloud.CloudSourceEvent
 import com.example.timedmusicplayer.ui.cloud.CloudSourceUiState

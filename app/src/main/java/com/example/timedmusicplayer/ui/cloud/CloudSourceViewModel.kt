@@ -1,4 +1,4 @@
-﻿package com.example.timedmusicplayer.ui.cloud
+package com.example.timedmusicplayer.ui.cloud
 
 import android.app.Application
 import android.net.Uri
@@ -7,8 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.timedmusicplayer.R
 import com.example.timedmusicplayer.data.repository.CloudSourceRepository
 import com.example.timedmusicplayer.data.repository.LibraryRepository
-import com.example.timedmusicplayer.model.CloudSource
-import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.domain.model.CloudSource
+import com.example.timedmusicplayer.domain.model.TrackFilter
 import com.example.timedmusicplayer.playback.PlaybackController
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow

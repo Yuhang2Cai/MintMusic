@@ -1,4 +1,4 @@
-﻿package com.example.timedmusicplayer.adapter
+package com.example.timedmusicplayer.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -10,8 +10,8 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.timedmusicplayer.R
 import com.example.timedmusicplayer.artwork.ArtworkRepository
-import com.example.timedmusicplayer.model.SourceType
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.SourceType
+import com.example.timedmusicplayer.domain.model.Track
 import com.example.timedmusicplayer.emotion.MoodAnalysisState
 import java.util.Locale
 

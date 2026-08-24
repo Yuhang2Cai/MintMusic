@@ -3,7 +3,7 @@ package com.example.timedmusicplayer.data.repository
 import android.net.Uri
 import com.example.timedmusicplayer.data.SettingsStore
 import com.example.timedmusicplayer.data.migration.LegacyDataMigrator
-import com.example.timedmusicplayer.model.TrackFilter
+import com.example.timedmusicplayer.domain.model.TrackFilter
 import com.example.timedmusicplayer.playback.PlaybackMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

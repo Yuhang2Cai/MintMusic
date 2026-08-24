@@ -1,4 +1,4 @@
-﻿package com.example.timedmusicplayer.ui.player
+package com.example.timedmusicplayer.ui.player
 
 import android.app.Application
 import android.os.SystemClock
@@ -10,7 +10,7 @@ import com.example.timedmusicplayer.emotion.MoodTaskResult
 import com.example.timedmusicplayer.lyrics.LyricsGenerationResult
 import com.example.timedmusicplayer.lyrics.LyricsRepository
 import com.example.timedmusicplayer.lyrics.LyricLine
-import com.example.timedmusicplayer.model.Track
+import com.example.timedmusicplayer.domain.model.Track
 import com.example.timedmusicplayer.playback.PlaybackController
 import com.example.timedmusicplayer.playback.PlaybackController.PlaybackTickMode
 import com.example.timedmusicplayer.playback.PlaybackMode

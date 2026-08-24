@@ -1,4 +1,4 @@
-package com.example.timedmusicplayer.model
+package com.example.timedmusicplayer.domain.model
 
 /**
  * 云端流媒体条目模型。

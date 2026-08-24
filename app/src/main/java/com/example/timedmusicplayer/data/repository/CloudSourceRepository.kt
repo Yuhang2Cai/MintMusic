@@ -4,7 +4,7 @@ import com.example.timedmusicplayer.data.db.MintDatabase
 import com.example.timedmusicplayer.data.db.mapper.toEntity
 import com.example.timedmusicplayer.data.db.mapper.toModel
 import com.example.timedmusicplayer.data.migration.LegacyDataMigrator
-import com.example.timedmusicplayer.model.CloudSource
+import com.example.timedmusicplayer.domain.model.CloudSource
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
