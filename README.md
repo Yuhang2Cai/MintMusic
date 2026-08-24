@@ -10,51 +10,49 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 通过 Android Storage Access Framework 选择音乐文件夹；应用会读取曲目信息与内嵌封面，并支持“全部 / 本地 / 云端”快速筛选。
 
-<img title="" src="file:///C:/Users/caid0/Documents/library-and-filter.gif" alt="library-and-filter.gif" width="261" data-align="center">
-
-<!-- ![本地曲库扫描与筛选](docs/assets/demos/library-and-filter.gif) -->
+<p align="center">
+  <img src="docs/assets/demos/library-and-filter.gif" alt="本地曲库扫描与筛选" width="261">
+</p>
 
 ### 播放器与迷你播放器
 
 播放器提供封面旋转、实时频谱、进度拖动、上一首、播放/暂停、下一首、播放模式切换和睡眠定时；返回曲库后可继续使用悬浮迷你播放器控制播放。
 
-<img title="" src="file:///C:/Users/caid0/Documents/player-controls.gif" alt="player-controls.gif" width="287" data-align="center">
-
-<!-- ![播放器与迷你播放器](docs/assets/demos/player-controls.gif) -->
+<p align="center">
+  <img src="docs/assets/demos/player-controls.gif" alt="播放器与迷你播放器" width="287">
+</p>
 
 ### 在线同步歌词
 
 播放器可根据歌曲标题、歌手、专辑和时长匹配在线 LRC。匹配成功后，向左滑进入同步歌词页，向右滑返回封面页。
 
-<img title="" src="file:///C:/Users/caid0/Documents/synced-lyrics.gif" alt="synced-lyrics.gif" width="244" data-align="center">
-
-<!-- ![在线同步歌词](docs/assets/demos/synced-lyrics.gif) -->
+<p align="center">
+  <img src="docs/assets/demos/synced-lyrics.gif" alt="在线同步歌词" width="244">
+</p>
 
 ### 主题颜色
 
 内置薄荷绿、天空蓝、青色、紫色、靛蓝、粉色、橙色和红色八套主题，并适配系统深色模式。
 
-<img title="" src="file:///C:/Users/caid0/Documents/synced-lyrics.gif" alt="synced-lyrics.gif" width="244" data-align="center">
-
-<!-- ![主题颜色切换](docs/assets/demos/theme-colors.gif) -->
+<p align="center">
+  <img src="docs/assets/demos/theme-colors.gif" alt="主题颜色切换" width="244">
+</p>
 
 ### 在线音源
 
 可以维护 HTTP/HTTPS 音频流，设置名称和可选封面 URL，并从在线音源列表直接开始播放。
 
-<img title="" src="file:///C:/Users/caid0/Documents/cloud-sources.gif" alt="cloud-sources.gif" width="268" data-align="center">
-
-
-
-<!-- ![在线音源管理](docs/assets/demos/cloud-sources.gif) -->
+<p align="center">
+  <img src="docs/assets/demos/cloud-sources.gif" alt="在线音源管理" width="268">
+</p>
 
 ### 歌曲情绪分析
 
 本地歌曲可上传到自建 Music2Emo 服务分析情绪标签、愉悦度和能量。服务完成推理后会删除临时音频。
 
-<img title="" src="file:///C:/Users/caid0/Documents/mood-analysis.gif" alt="mood-analysis.gif" width="299" data-align="center">
-
-<!-- ![歌曲情绪分析](docs/assets/demos/mood-analysis.gif) -->
+<p align="center">
+  <img src="docs/assets/demos/mood-analysis.gif" alt="歌曲情绪分析" width="299">
+</p>
 
 ## 主要功能
 
