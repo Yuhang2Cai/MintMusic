@@ -4,6 +4,14 @@ MintMusic 是一款以本地曲库为核心、同时支持在线音源的 Androi
 
 > 当前版本：`1.0` · 最低 Android 8.0（API 26）· 目标 Android 14（API 34）
 
+## 下载 APK
+
+<p align="center">
+  <a href="https://github.com/Yuhang2Cai/MintMusic/raw/refs/heads/master/downloads/MintMusic-v1.0.apk"><strong>⬇️ 直接下载 MintMusic v1.0 APK（13.2 MB）</strong></a>
+</p>
+
+当前提供的是已签名、可直接安装的测试版 APK。Android 可能会提示允许“安装未知应用”；安装包的 SHA-256 为 `760321EC9E781F94AFC3FD7013A775A920AB453EA52BE09554E2E8086FE79C37`。
+
 ## 功能演示
 
 ### 本地曲库与筛选
