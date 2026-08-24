@@ -50,6 +50,7 @@
     <string name="selected_tracks_count">已选择 %1$d 首</string>
     <string name="delete_tracks_title">删除歌曲</string>
     <string name="delete_tracks_message">确定从主页列表移除选中的 %1$d 首歌曲吗？不会删除本地音乐文件。</string>
+    <string name="delete_all_with_cloud_sources_message">确定从主页列表移除这 %1$d 首歌曲吗？所有在线音源配置也会被删除，但不会删除本地音乐文件。</string>
     <string name="delete_tracks_success">已删除 %1$d 首歌曲</string>
     <string name="delete_tracks_partial">已删除 %1$d 首，%2$d 首删除失败。请确认文件夹写入权限后重试。</string>
     <string name="mini_player_cover">迷你播放器封面</string>

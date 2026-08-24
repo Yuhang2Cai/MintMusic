@@ -47,7 +47,8 @@
     <string name="cancel">Cancel</string>
     <string name="selected_tracks_count">%1$d selected</string>
     <string name="delete_tracks_title">Delete tracks</string>
-    <string name="delete_tracks_message">Delete the %1$d selected tracks? Local audio files will also be deleted. This cannot be undone.</string>
+    <string name="delete_tracks_message">Remove the %1$d selected tracks from the home library? Local audio files will not be deleted.</string>
+    <string name="delete_all_with_cloud_sources_message">Remove these %1$d tracks from the home library? All online source configurations will also be deleted. Local audio files will not be deleted.</string>
     <string name="delete_tracks_success">Deleted %1$d tracks</string>
     <string name="delete_tracks_partial">Deleted %1$d tracks; %2$d failed. Check folder write access and try again.</string>
     <string name="mini_player_cover">Mini player cover</string>

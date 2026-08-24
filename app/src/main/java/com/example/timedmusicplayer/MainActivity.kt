@@ -447,9 +447,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showDeleteAllConfirmation(event: MainEvent.ConfirmDeleteAll) {
+        val messageRes = if (event.filter == TrackFilter.LOCAL) {
+            R.string.delete_tracks_message
+        } else {
+            R.string.delete_all_with_cloud_sources_message
+        }
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.delete_tracks_title)
-            .setMessage(getString(R.string.delete_tracks_message, event.count))
+            .setMessage(getString(messageRes, event.count))
             .setNegativeButton(R.string.cancel, null)
             .setPositiveButton(R.string.delete) { _, _ -> viewModel.onDeleteAllConfirmed(event.filter) }
             .show()

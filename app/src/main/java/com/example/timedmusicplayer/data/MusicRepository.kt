@@ -147,10 +147,16 @@ class MusicRepository private constructor(context: Context) {
     suspend fun deleteAllTracks(filter: TrackFilter): DeleteTracksResult = onIo {
         ensureMigratedInternal()
         val requested = count(filter)
-        val deleted = when (filter) {
-            TrackFilter.ALL -> database.tracks().deleteAll()
-            TrackFilter.LOCAL -> database.tracks().deleteBySource(SourceType.LOCAL.name)
-            TrackFilter.CLOUD -> database.tracks().deleteBySource(SourceType.CLOUD.name)
+        val deleted = database.runInTransaction<Int> {
+            val deletedTracks = when (filter) {
+                TrackFilter.ALL -> database.tracks().deleteAll()
+                TrackFilter.LOCAL -> database.tracks().deleteBySource(SourceType.LOCAL.name)
+                TrackFilter.CLOUD -> database.tracks().deleteBySource(SourceType.CLOUD.name)
+            }
+            if (filter == TrackFilter.ALL || filter == TrackFilter.CLOUD) {
+                database.cloudSources().deleteAll()
+            }
+            deletedTracks
         }
         DeleteTracksResult(requested, deleted, (requested - deleted).coerceAtLeast(0))
     }

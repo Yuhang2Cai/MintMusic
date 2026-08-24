@@ -50,6 +50,7 @@ interface CloudSourceDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE) fun upsert(item: CloudSourceEntity)
     @Insert(onConflict = OnConflictStrategy.IGNORE) fun insertAll(items: List<CloudSourceEntity>)
     @Query("DELETE FROM cloud_sources WHERE id = :id") fun deleteById(id: String): Int
+    @Query("DELETE FROM cloud_sources") fun deleteAll(): Int
     @Query("SELECT EXISTS(SELECT 1 FROM cloud_sources WHERE lower(url) = lower(:url) AND id != :ignoreId)") fun hasUrl(url: String, ignoreId: String): Boolean
 }
 
