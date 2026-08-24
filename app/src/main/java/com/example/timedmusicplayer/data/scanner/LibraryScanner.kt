@@ -4,10 +4,10 @@ import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import com.example.timedmusicplayer.data.db.LibraryFolderEntity
 import com.example.timedmusicplayer.data.db.MintDatabase
-import com.example.timedmusicplayer.data.db.TrackEntity
-import com.example.timedmusicplayer.data.db.toEntity
+import com.example.timedmusicplayer.data.db.entity.LibraryFolderEntity
+import com.example.timedmusicplayer.data.db.entity.TrackEntity
+import com.example.timedmusicplayer.data.db.mapper.toEntity
 import com.example.timedmusicplayer.model.SourceType
 import com.example.timedmusicplayer.model.Track
 import java.util.ArrayDeque

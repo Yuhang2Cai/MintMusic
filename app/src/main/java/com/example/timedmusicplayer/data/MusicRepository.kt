@@ -6,12 +6,12 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import com.example.timedmusicplayer.data.db.CloudSourceEntity
-import com.example.timedmusicplayer.data.db.LibraryFolderEntity
 import com.example.timedmusicplayer.data.db.MintDatabase
-import com.example.timedmusicplayer.data.db.PlaybackHistoryEntity
-import com.example.timedmusicplayer.data.db.toEntity
-import com.example.timedmusicplayer.data.db.toModel
+import com.example.timedmusicplayer.data.db.entity.CloudSourceEntity
+import com.example.timedmusicplayer.data.db.entity.LibraryFolderEntity
+import com.example.timedmusicplayer.data.db.entity.PlaybackHistoryEntity
+import com.example.timedmusicplayer.data.db.mapper.toEntity
+import com.example.timedmusicplayer.data.db.mapper.toModel
 import com.example.timedmusicplayer.data.index.LocalTrackIndexStore
 import com.example.timedmusicplayer.data.scanner.LibraryScanner
 import com.example.timedmusicplayer.model.CloudSource
